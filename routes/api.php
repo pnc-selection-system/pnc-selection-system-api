@@ -8,3 +8,4 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:api');
 
 require __DIR__.'/Auth.php';
+require __DIR__.'/Exam.php';
