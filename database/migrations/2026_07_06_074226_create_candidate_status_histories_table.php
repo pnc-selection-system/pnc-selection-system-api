@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('candidate_id')->constrained()->onDelete('cascade');
             $table->string('status', 50);
-            $table->foreignId('changed_by')->constrained('users')->onDelete('set null');
+            $table->foreignId('changed_by')->nullable()->constrained('users')->onDelete('set null');
             $table->dateTime('changed_at');
             $table->timestamps();
         });
