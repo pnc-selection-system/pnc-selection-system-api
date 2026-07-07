@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('home_investigations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('candidate_id')->constrained()->onDelete('cascade');
-            $table->foreignId('investigator_id')->constrained('users')->onDelete('set null');
+            $table->foreignId('investigator_id')->nullable()->constrained('users')->onDelete('set null');
             $table->date('visit_date');
             $table->string('location', 255);
             $table->string('create_by');

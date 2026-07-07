@@ -18,11 +18,9 @@ return new class extends Migration
                 ->constrained('home_investigations')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
-
             $table->string('investigator_name');
             $table->text('people_met')->nullable();
             $table->text('findings')->nullable();
-
             $table->enum('recommendation', [
                 'approve',
                 'reject',
