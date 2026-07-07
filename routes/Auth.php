@@ -6,8 +6,8 @@ use App\Http\Controllers\Api\Auth\LoginController;
 use App\Http\Controllers\Api\Auth\LogoutController;
 use App\Http\Controllers\Api\Auth\ProfileController;
 
-Route::post('/Auth/login',    [LoginController::class, 'login']);
+Route::post('/auth/login',    [LoginController::class, 'login']);
 Route::middleware('auth:api')->group(function () {
-    Route::post('/Auth/logout', [LogoutController::class, 'logout']);
-    Route::get('/Auth/profile',      [ProfileController::class, 'profile']);
+    Route::post('/auth/logout', [LogoutController::class, 'logout']);
+    Route::get('/auth/profile',      [ProfileController::class, 'profile']);
 });

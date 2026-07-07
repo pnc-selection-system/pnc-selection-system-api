@@ -9,7 +9,7 @@ use Tymon\JWTAuth\Exceptions\JWTException;
 
 class LoginController extends Controller
 {
-            public function login(Request $request)
+       public function login(Request $request)
         {
             $credentials = $request->only('email', 'password');
 
@@ -28,7 +28,6 @@ class LoginController extends Controller
             }
 
             $user = auth()->user();
-
             if (!$user->active) {
                 JWTAuth::invalidate(JWTAuth::getToken());
                 return response()->json([
@@ -41,9 +40,15 @@ class LoginController extends Controller
                 'success' => true,
                 'message' => 'Login successful',
                 'data' => [
-                    'user'  => $user->load('role'),
-                    'token' => $token,
-                    'token_type' => 'bearer',
+                    'expires_in'   => auth('api')->factory()->getTTL() * 60,
+                    'user' => [
+                        'id'    => $user->id,
+                        'name'  => $user->name,
+                        'email' => $user->email,
+                        'role'  => $user->role->name ?? 'User',
+                    ],
+                    'token_type'   => 'Bearer',
+                    'access_token' => $token
                 ]
             ]);
         }
