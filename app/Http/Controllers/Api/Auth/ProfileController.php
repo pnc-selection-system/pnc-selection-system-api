@@ -2,18 +2,21 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use Services\AuthServices;
 
 class ProfileController extends Controller
 {
-    public function profile()
+    public function __construct(protected AuthServices $authService)
     {
-        $user = auth()->user()->load('role');
+    }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Profile retrieved successfully',
-            'data'    => $user,
-        ]);
+    public function profile(): JsonResponse
+    {
+        $result = $this->authService->profile();
+
+        return ApiResponse::fromServiceResult($result);
     }
 }

@@ -2,36 +2,21 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Tymon\JWTAuth\Exceptions\JWTException;
+use Illuminate\Http\JsonResponse;
+use Services\AuthServices;
 
 class LogoutController extends Controller
 {
-    public function logout()
+    public function __construct(protected AuthServices $authService)
     {
-        try {
-            $token = JWTAuth::getToken();
+    }
 
-            if (!$token) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Token not found',
-                ], 401);
-            }
+    public function logout(): JsonResponse
+    {
+        $result = $this->authService->logout();
 
-            JWTAuth::invalidate($token);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully logged out',
-            ]);
-
-        } catch (JWTException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to logout. Token may be expired or invalid.',
-            ], 500);
-        }
+        return ApiResponse::fromServiceResult($result);
     }
 }

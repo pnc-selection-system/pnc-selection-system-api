@@ -2,36 +2,22 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Auth\StoreRegisterRequest;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Http\JsonResponse;
+use Services\AuthServices;
 
 class RegisterController extends Controller
 {
-    public function register(StoreRegisterRequest $request)
+    public function __construct(protected AuthServices $authService)
     {
-        $user = User::create([
-            'role_id'  => $request->role_id,
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'phone'    => $request->phone,
-            'active'   => true,
-        ]);
+    }
 
-        $token = JWTAuth::fromUser($user);
+    public function register(StoreRegisterRequest $request): JsonResponse
+    {
+        $result = $this->authService->register($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'User registered successfully',
-            'data'    => [
-                'access_token' => $token,
-                'token_type'   => 'Bearer',
-                'expires_in'   => config('jwt.ttl') * 60,
-                'user'         => $user->load('role'),
-            ],
-        ], 201);
+        return ApiResponse::fromServiceResult($result);
     }
 }

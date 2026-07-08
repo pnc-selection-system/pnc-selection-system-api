@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\SelectCampaing;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\SelectCampaing\StoreSelectCampaingRequest;
 use App\Http\Requests\Api\SelectCampaing\UpdateSelectCampaingRequest;
@@ -19,51 +20,35 @@ class SelectCampaingController extends Controller
     {
         $selectCampaings = $this->selectCampaingService->list(request()->all());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Selection campaigns retrieved successfully',
-            'data'    => $selectCampaings,
-        ]);
+        return ApiResponse::success($selectCampaings, 'Selection campaigns retrieved successfully');
     }
 
     public function store(StoreSelectCampaingRequest $request): JsonResponse
     {
         $selectCampaing = $this->selectCampaingService->create($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Selection campaign created successfully',
-            'data'    => $selectCampaing,
-        ], 201);
+        return ApiResponse::created($selectCampaing, 'Selection campaign created successfully');
     }
 
     public function show(SelectCampaing $selectCampaing): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Selection campaign retrieved successfully',
-            'data'    => $this->selectCampaingService->find($selectCampaing),
-        ]);
+        return ApiResponse::success(
+            $this->selectCampaingService->find($selectCampaing),
+            'Selection campaign retrieved successfully'
+        );
     }
 
     public function update(UpdateSelectCampaingRequest $request, SelectCampaing $selectCampaing): JsonResponse
     {
         $selectCampaing = $this->selectCampaingService->update($selectCampaing, $request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Selection campaign updated successfully',
-            'data'    => $selectCampaing,
-        ]);
+        return ApiResponse::success($selectCampaing, 'Selection campaign updated successfully');
     }
 
     public function destroy(SelectCampaing $selectCampaing): JsonResponse
     {
         $this->selectCampaingService->delete($selectCampaing);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Selection campaign deleted successfully',
-        ]);
+        return ApiResponse::ok('Selection campaign deleted successfully');
     }
 }

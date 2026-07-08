@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api\SelectCampaing;
 
+use App\Enums\CampaignStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSelectCampaingRequest extends FormRequest
 {
@@ -14,7 +16,7 @@ class StoreSelectCampaingRequest extends FormRequest
             'condidate_total' => 'required|integer|min:0',
             'start_date'      => 'required|date',
             'end_date'        => 'required|date|after_or_equal:start_date',
-            'status'          => 'sometimes|in:Draft,Active,Closed',
+            'status'          => ['sometimes', Rule::enum(CampaignStatus::class)],
         ];
     }
 }
