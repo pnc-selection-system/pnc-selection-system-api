@@ -1,23 +1,37 @@
 <?php
 
-namespace App\Http\Controllers\Campaign;
+namespace App\Http\Controllers\Api\Campaign;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Campaign\StoreCampaignRequest;
 use App\Http\Requests\Campaign\UpdateCampaignRequest;
 use App\Services\Campaign\CampaignService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CampaignController extends Controller
 {
     public function __construct(protected CampaignService $service) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $filters = $request->only(['search', 'year', 'status', 'start_date_from', 'start_date_to', 'end_date_from', 'end_date_to']);
+        $perPage = $request->input('per_page', 15);
+        
+        $campaigns = $this->service->getPaginated($filters, $perPage);
+        
         return response()->json([
             'success' => true,
             'message' => 'Campaigns retrieved successfully.',
-            'data' => $this->service->getAll()
+            'data' => $campaigns->items(),
+            'pagination' => [
+                'total' => $campaigns->total(),
+                'per_page' => $campaigns->perPage(),
+                'current_page' => $campaigns->currentPage(),
+                'last_page' => $campaigns->lastPage(),
+                'from' => $campaigns->firstItem(),
+                'to' => $campaigns->lastItem(),
+            ]
         ]);
     }
 

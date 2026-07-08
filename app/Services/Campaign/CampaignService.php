@@ -32,4 +32,9 @@ class CampaignService
     {
         return $this->repository->delete($id);
     }
+
+    public function getPaginated(array $filters = [], int $perPage = 15)
+    {
+        return $this->repository->getPaginated($filters, $perPage);
+    }
 }
