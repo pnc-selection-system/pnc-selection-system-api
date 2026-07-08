@@ -4,7 +4,7 @@ namespace App\Repositories\Campaign;
 
 use App\Models\Campaign;
 
-class CampaignRepository implements CampaignRepositoryInterface
+class CampaignRepository
 {
     public function getAll()
     {

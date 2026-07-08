@@ -2,11 +2,11 @@
 
 namespace App\Services\Campaign;
 
-use App\Repositories\Campaign\CampaignRepositoryInterface;
+use App\Repositories\Campaign\CampaignRepository;
 
 class CampaignService
 {
-    public function __construct(protected CampaignRepositoryInterface $repository) {}
+    public function __construct(protected CampaignRepository $repository) {}
 
     public function getAll()
     {
