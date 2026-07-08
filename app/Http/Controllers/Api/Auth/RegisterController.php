@@ -3,31 +3,15 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Auth\StoreRegisterRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class RegisterController extends Controller
 {
-    public function register(Request $request)
+    public function register(StoreRegisterRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:150',
-            'email'    => 'required|string|email|max:100|unique:users',
-            'password' => 'required|string|min:6|confirmed',
-            'phone'    => 'nullable|string|max:30',
-            'role_id'  => 'required|exists:roles,id',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'errors'  => $validator->errors(),
-            ], 422);
-        }
-
         $user = User::create([
             'role_id'  => $request->role_id,
             'name'     => $request->name,
@@ -43,8 +27,10 @@ class RegisterController extends Controller
             'success' => true,
             'message' => 'User registered successfully',
             'data'    => [
-                'user'  => $user->load('role'),
-                'token' => $token,
+                'access_token' => $token,
+                'token_type'   => 'Bearer',
+                'expires_in'   => config('jwt.ttl') * 60,
+                'user'         => $user->load('role'),
             ],
         ], 201);
     }

@@ -16,7 +16,7 @@ class LogoutController extends Controller
             if (!$token) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Token not found'
+                    'message' => 'Token not found',
                 ], 401);
             }
 
@@ -24,13 +24,13 @@ class LogoutController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Successfully logged out'
+                'message' => 'Successfully logged out',
             ]);
 
         } catch (JWTException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to logout. Token may be expired or invalid.'
+                'message' => 'Failed to logout. Token may be expired or invalid.',
             ], 500);
         }
     }

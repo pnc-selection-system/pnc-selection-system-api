@@ -8,6 +8,12 @@ class ProfileController extends Controller
 {
     public function profile()
     {
-        return response()->json(auth()->user()->load('role'));
+        $user = auth()->user()->load('role');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile retrieved successfully',
+            'data'    => $user,
+        ]);
     }
 }

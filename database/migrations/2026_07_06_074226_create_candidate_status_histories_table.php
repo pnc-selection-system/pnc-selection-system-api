@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up()
     {
+<<<<<<< HEAD
        Schema::create('candidate_status_histories', function (Blueprint $table) {
     $table->id();
     $table->foreignId('candidate_id')
@@ -21,6 +22,16 @@ return new class extends Migration
      $table->enum('status', ['Pending', 'Approved', 'Rejected', 'Withdrawn', 'Held', 'Selected'])->default('Pending')->nullable();
     $table->timestamps();
     });
+=======
+        Schema::create('candidate_status_histories', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('candidate_id')->constrained()->onDelete('cascade');
+            $table->string('status', 50);
+            $table->foreignId('changed_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->dateTime('changed_at');
+            $table->timestamps();
+        });
+>>>>>>> 87cb885b5de82731a26b1818c20af4145087198b
     }
 
     public function down()
