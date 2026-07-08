@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Api\Exam;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Exam\StoreExamRequest;
+use App\Http\Requests\Api\Exam\UpdateExamRequest;
 use App\Models\Exam;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Services\ExamServices;
 
@@ -14,9 +15,9 @@ class ExamController extends Controller
     {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $exams = $this->examService->list($request->all());
+        $exams = $this->examService->list(request()->all());
 
         return response()->json([
             'success' => true,
@@ -25,15 +26,9 @@ class ExamController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreExamRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'campaign_id'    => 'required|integer|exists:selection_campaigns,id',
-            'exam_date'      => 'required|date',
-            'publish_status' => 'sometimes|boolean',
-        ]);
-
-        $exam = $this->examService->create($validated);
+        $exam = $this->examService->create($request->validated());
 
         return response()->json([
             'success' => true,
@@ -51,15 +46,9 @@ class ExamController extends Controller
         ]);
     }
 
-    public function update(Request $request, Exam $exam): JsonResponse
+    public function update(UpdateExamRequest $request, Exam $exam): JsonResponse
     {
-        $validated = $request->validate([
-            'campaign_id'    => 'sometimes|required|integer|exists:selection_campaigns,id',
-            'exam_date'      => 'sometimes|required|date',
-            'publish_status' => 'sometimes|boolean',
-        ]);
-
-        $exam = $this->examService->update($exam, $validated);
+        $exam = $this->examService->update($exam, $request->validated());
 
         return response()->json([
             'success' => true,

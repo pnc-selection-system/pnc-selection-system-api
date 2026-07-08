@@ -3,44 +3,36 @@
 namespace Services;
 
 use App\Models\Exam;
-use Illuminate\Database\Eloquent\Collection;
+use Repositories\ExamRepository;
 
 class ExamServices
 {
-    public function list(array $filters = []): Collection
+    public function __construct(protected ExamRepository $examRepository)
     {
-        $query = Exam::query();
+    }
 
-        if (!empty($filters['campaign_id'])) {
-            $query->where('campaign_id', (int) $filters['campaign_id']);
-        }
-
-        if (array_key_exists('publish_status', $filters)) {
-            $query->where('publish_status', filter_var($filters['publish_status'], FILTER_VALIDATE_BOOLEAN));
-        }
-
-        return $query->latest()->get();
+    public function list(array $filters = [])
+    {
+        return $this->examRepository->list($filters);
     }
 
     public function create(array $data): Exam
     {
-        return Exam::create($data);
+        return $this->examRepository->create($data);
     }
 
     public function find(Exam $exam): Exam
     {
-        return $exam;
+        return $this->examRepository->find($exam);
     }
 
     public function update(Exam $exam, array $data): Exam
     {
-        $exam->update($data);
-
-        return $exam;
+        return $this->examRepository->update($exam, $data);
     }
 
     public function delete(Exam $exam): void
     {
-        $exam->delete();
+        $this->examRepository->delete($exam);
     }
 }
