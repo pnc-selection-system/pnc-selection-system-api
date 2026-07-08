@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Campaign;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Campaign\StoreCampaignRequest;
 use App\Http\Requests\Campaign\UpdateCampaignRequest;
-use App\Http\Resources\Campaign\CampaignResource;
 use App\Services\Campaign\CampaignService;
 use Illuminate\Http\JsonResponse;
 
@@ -18,7 +17,7 @@ class CampaignController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Campaigns retrieved successfully.',
-            'data' => CampaignResource::collection($this->service->getAll())
+            'data' => $this->service->getAll()
         ]);
     }
 
@@ -29,7 +28,7 @@ class CampaignController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Campaign created successfully.',
-            'data' => new CampaignResource($campaign)
+            'data' => $campaign
         ], 201);
     }
 
@@ -38,7 +37,7 @@ class CampaignController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Campaign retrieved successfully.',
-            'data' => new CampaignResource($this->service->findById($id))
+            'data' => $this->service->findById($id)
         ]);
     }
 
@@ -49,7 +48,7 @@ class CampaignController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Campaign updated successfully.',
-            'data' => new CampaignResource($campaign)
+            'data' => $campaign
         ]);
     }
 
