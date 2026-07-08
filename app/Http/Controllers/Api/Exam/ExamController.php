@@ -11,9 +11,7 @@ use Services\ExamServices;
 
 class ExamController extends Controller
 {
-    public function __construct(protected ExamServices $examService)
-    {
-    }
+    public function __construct(protected ExamServices $examService) {}
 
     public function index(): JsonResponse
     {
@@ -22,7 +20,7 @@ class ExamController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Exams retrieved successfully',
-            'data'    => $exams,
+            'data' => $exams,
         ]);
     }
 
@@ -33,7 +31,7 @@ class ExamController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Exam created successfully',
-            'data'    => $exam,
+            'data' => $exam,
         ], 201);
     }
 
@@ -42,7 +40,7 @@ class ExamController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Exam retrieved successfully',
-            'data'    => $this->examService->find($exam),
+            'data' => $this->examService->find($exam),
         ]);
     }
 
@@ -53,7 +51,7 @@ class ExamController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Exam updated successfully',
-            'data'    => $exam,
+            'data' => $exam,
         ]);
     }
 

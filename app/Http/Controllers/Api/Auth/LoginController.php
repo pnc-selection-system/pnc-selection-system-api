@@ -4,52 +4,53 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 class LoginController extends Controller
 {
-       public function login(Request $request)
-        {
-            $credentials = $request->only('email', 'password');
+    public function login(Request $request)
+    {
+        $credentials = $request->only('email', 'password');
 
-            try {
-                if (!$token = JWTAuth::attempt($credentials)) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid email or password'
-                    ], 401);
-                }
-            } catch (JWTException $e) {
+        try {
+            if (! $token = JWTAuth::attempt($credentials)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Could not create token'
-                ], 500);
+                    'message' => 'Invalid email or password',
+                ], 401);
             }
+        } catch (JWTException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not create token',
+            ], 500);
+        }
 
-            $user = auth()->user();
-            if (!$user->active) {
-                JWTAuth::invalidate(JWTAuth::getToken());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Your account is inactive'
-                ], 403);
-            }
+        $user = auth()->user();
+        if (! $user->active) {
+            JWTAuth::invalidate(JWTAuth::getToken());
 
             return response()->json([
-                'success' => true,
-                'message' => 'Login successful',
-                'data' => [
-                    'expires_in'   => auth('api')->factory()->getTTL() * 60,
-                    'user' => [
-                        'id'    => $user->id,
-                        'name'  => $user->name,
-                        'email' => $user->email,
-                        'role'  => $user->role->name ?? 'User',
-                    ],
-                    'token_type'   => 'Bearer',
-                    'access_token' => $token
-                ]
-            ]);
+                'success' => false,
+                'message' => 'Your account is inactive',
+            ], 403);
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful',
+            'data' => [
+                'expires_in' => auth('api')->factory()->getTTL() * 60,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role->name ?? 'User',
+                ],
+                'token_type' => 'Bearer',
+                'access_token' => $token,
+            ],
+        ]);
+    }
 }

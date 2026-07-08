@@ -11,9 +11,7 @@ use Services\AssessmentFormServices;
 
 class AssessmentFormController extends Controller
 {
-    public function __construct(protected AssessmentFormServices $assessmentFormService)
-    {
-    }
+    public function __construct(protected AssessmentFormServices $assessmentFormService) {}
 
     public function index(): JsonResponse
     {
@@ -22,7 +20,7 @@ class AssessmentFormController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Assessment forms retrieved successfully',
-            'data'    => $assessmentForms,
+            'data' => $assessmentForms,
         ]);
     }
 
@@ -33,7 +31,7 @@ class AssessmentFormController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Assessment form created successfully',
-            'data'    => $assessmentForm,
+            'data' => $assessmentForm,
         ], 201);
     }
 
@@ -42,7 +40,7 @@ class AssessmentFormController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Assessment form retrieved successfully',
-            'data'    => $this->assessmentFormService->find($assessmentForm),
+            'data' => $this->assessmentFormService->find($assessmentForm),
         ]);
     }
 
@@ -53,7 +51,7 @@ class AssessmentFormController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Assessment form updated successfully',
-            'data'    => $assessmentForm,
+            'data' => $assessmentForm,
         ]);
     }
 
