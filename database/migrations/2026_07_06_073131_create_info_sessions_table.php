@@ -14,11 +14,13 @@ return new class extends Migration
             $table->foreignId('province_id')->constrained('provinces')->onDelete('cascade');
             $table->foreignId('school_id')->constrained('schools')->onDelete('cascade');
             $table->date('session_date');
-            $table->time('session_time');
+            $table->time('start_time');
+            $table->time('end_time');
             $table->string('location', 255);
-            $table->string('host_name', 150)->nullable();
-            $table->integer('expect_attendance')->default(0);
-            $table->integer('attendance_count')->default(0);
+            $table->string('hosted_by', 150)->nullable();
+            $table->text('description')->nullable();
+            $table->integer('expected_attendance')->default(0);
+            $table->integer('actual_attendance')->default(0);
             $table->timestamps();
         });
     }
