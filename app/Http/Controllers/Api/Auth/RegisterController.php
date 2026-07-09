@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
-use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Http\Requests\Api\Auth\StoreRegisterRequest;
+use Illuminate\Http\JsonResponse;
+use Services\AuthServices;
 
 class RegisterController extends Controller
 {
-    public function register(Request $request)
+    public function __construct(protected AuthServices $authService)
     {
+<<<<<<< HEAD
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:150',
             'email' => 'required|string|email|max:100|unique:users',
@@ -47,5 +47,14 @@ class RegisterController extends Controller
                 'token' => $token,
             ],
         ], 201);
+=======
+    }
+
+    public function register(StoreRegisterRequest $request): JsonResponse
+    {
+        $result = $this->authService->register($request->validated());
+
+        return ApiResponse::fromServiceResult($result);
+>>>>>>> 8b829ca40b1863c5165ba13b969ca533aef058cc
     }
 }

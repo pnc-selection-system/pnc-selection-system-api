@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CampaignStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class SelectCampaing extends Model
@@ -15,5 +16,13 @@ class SelectCampaing extends Model
         'start_date',
         'end_date',
         'status',
+    ];
+
+    protected $casts = [
+        'year'            => 'integer',
+        'condidate_total' => 'integer',
+        'start_date'      => 'date',
+        'end_date'        => 'date',
+        'status'          => CampaignStatus::class,
     ];
 }

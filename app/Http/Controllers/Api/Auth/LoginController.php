@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+<<<<<<< HEAD
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -52,5 +54,22 @@ class LoginController extends Controller
                 'access_token' => $token,
             ],
         ]);
+=======
+use App\Http\Requests\Api\Auth\StoreLoginRequest;
+use Illuminate\Http\JsonResponse;
+use Services\AuthServices;
+
+class LoginController extends Controller
+{
+    public function __construct(protected AuthServices $authService)
+    {
+    }
+
+    public function login(StoreLoginRequest $request): JsonResponse
+    {
+        $result = $this->authService->login($request->only('email', 'password'));
+
+        return ApiResponse::fromServiceResult($result);
+>>>>>>> 8b829ca40b1863c5165ba13b969ca533aef058cc
     }
 }
