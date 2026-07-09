@@ -24,7 +24,7 @@ return new class extends Migration
             $table->enum('recommendation', [
                 'approve',
                 'reject',
-                'review'
+                'review',
             ]);
 
             $table->dateTime('submitted')->nullable();

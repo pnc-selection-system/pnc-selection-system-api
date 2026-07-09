@@ -11,7 +11,7 @@ class ExamRepository
     {
         $query = Exam::query();
 
-        if (!empty($filters['campaign_id'])) {
+        if (! empty($filters['campaign_id'])) {
             $query->where('campaign_id', (int) $filters['campaign_id']);
         }
 
