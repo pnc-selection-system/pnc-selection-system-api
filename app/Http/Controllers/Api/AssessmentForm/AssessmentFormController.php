@@ -12,9 +12,7 @@ use Services\AssessmentFormServices;
 
 class AssessmentFormController extends Controller
 {
-    public function __construct(protected AssessmentFormServices $assessmentFormService)
-    {
-    }
+    public function __construct(protected AssessmentFormServices $assessmentFormService) {}
 
     public function index(): JsonResponse
     {

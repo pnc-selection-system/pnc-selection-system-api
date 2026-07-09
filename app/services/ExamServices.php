@@ -7,9 +7,7 @@ use Repositories\ExamRepository;
 
 class ExamServices
 {
-    public function __construct(protected ExamRepository $examRepository)
-    {
-    }
+    public function __construct(protected ExamRepository $examRepository) {}
 
     public function list(array $filters = [])
     {

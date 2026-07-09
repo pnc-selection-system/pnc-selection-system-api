@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('name', 100);
             $table->decimal('max_score', 6, 2);
             $table->decimal('weight', 5, 2)->default(1.00);
-            $table->json('deduction_rule')->nullable(); 
+            $table->json('deduction_rule')->nullable();
             $table->timestamps();
         });
     }

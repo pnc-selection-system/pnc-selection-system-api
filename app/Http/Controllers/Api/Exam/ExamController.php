@@ -12,9 +12,7 @@ use Services\ExamServices;
 
 class ExamController extends Controller
 {
-    public function __construct(protected ExamServices $examService)
-    {
-    }
+    public function __construct(protected ExamServices $examService) {}
 
     public function index(): JsonResponse
     {

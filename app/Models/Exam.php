@@ -15,7 +15,7 @@ class Exam extends Model
 
     protected $casts = [
         'publish_status' => 'boolean',
-        'exam_date'      => 'date',
+        'exam_date' => 'date',
     ];
 
     public function campaign(): BelongsTo
