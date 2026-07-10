@@ -2,82 +2,54 @@
 
 namespace App\Http\Controllers\Api\Province;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Services\Province\ProvinceService;
+use App\Models\Province;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Services\ProvinceServices;
 
 class ProvinceController extends Controller
 {
-    public function __construct(protected ProvinceService $service) {}
+    public function __construct(protected ProvinceServices $provinceService) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $filters = $request->only(['search']);
-        $perPage = $request->input('per_page', 15);
-        
-        $provinces = $this->service->getPaginated($filters, $perPage);
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Provinces retrieved successfully.',
-            'data' => $provinces->items(),
-            'pagination' => [
-                'total' => $provinces->total(),
-                'per_page' => $provinces->perPage(),
-                'current_page' => $provinces->currentPage(),
-                'last_page' => $provinces->lastPage(),
-                'from' => $provinces->firstItem(),
-                'to' => $provinces->lastItem(),
-            ]
-        ]);
+        $provinces = $this->provinceService->list(request()->all());
+
+        return ApiResponse::success($provinces, 'Provinces retrieved successfully');
     }
 
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100|unique:provinces,name'
-        ]);
+        $province = $this->provinceService->create($request->validate([
+            'name' => ['required', 'string', 'max:100'],
+        ]));
 
-        $province = $this->service->create($request->all());
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Province created successfully.',
-            'data' => $province
-        ], 201);
+        return ApiResponse::created($province, 'Province created successfully');
     }
 
-    public function show(int $id): JsonResponse
+    public function show(Province $province): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Province retrieved successfully.',
-            'data' => $this->service->findById($id)
-        ]);
+        return ApiResponse::success(
+            $this->provinceService->find($province),
+            'Province retrieved successfully'
+        );
     }
 
-    public function update(Request $request, int $id): JsonResponse
+    public function update(Request $request, Province $province): JsonResponse
     {
-        $request->validate([
-            'name' => 'required|string|max:100|unique:provinces,name,' . $id
-        ]);
+        $province = $this->provinceService->update($province, $request->validate([
+            'name' => ['sometimes', 'string', 'max:100'],
+        ]));
 
-        $province = $this->service->update($id, $request->all());
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Province updated successfully.',
-            'data' => $province
-        ]);
+        return ApiResponse::success($province, 'Province updated successfully');
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(Province $province): JsonResponse
     {
-        $this->service->delete($id);
-        return response()->json([
-            'success' => true,
-            'message' => 'Province deleted successfully.'
-        ], 200);
+        $this->provinceService->delete($province);
+
+        return ApiResponse::ok('Province deleted successfully');
     }
 }

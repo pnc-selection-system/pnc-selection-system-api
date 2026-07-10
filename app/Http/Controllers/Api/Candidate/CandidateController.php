@@ -1,0 +1,52 @@
+<?php
+
+namespace App\Http\Controllers\Api\Candidate;
+
+use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Candidate\StoreCandidateRequest;
+use App\Http\Requests\Api\Candidate\UpdateCandidateRequest;
+use App\Models\Cadidate;
+use Illuminate\Http\JsonResponse;
+use Services\CandidateServices;
+
+class CandidateController extends Controller
+{
+    public function __construct(protected CandidateServices $candidateService) {}
+
+    public function index(): JsonResponse
+    {
+        $candidates = $this->candidateService->list(request()->all());
+
+        return ApiResponse::success($candidates, 'Candidates retrieved successfully');
+    }
+
+    public function store(StoreCandidateRequest $request): JsonResponse
+    {
+        $candidate = $this->candidateService->create($request->validated());
+
+        return ApiResponse::created($candidate, 'Candidate created successfully');
+    }
+
+    public function show(Cadidate $candidate): JsonResponse
+    {
+        return ApiResponse::success(
+            $this->candidateService->find($candidate),
+            'Candidate retrieved successfully'
+        );
+    }
+
+    public function update(UpdateCandidateRequest $request, Cadidate $candidate): JsonResponse
+    {
+        $candidate = $this->candidateService->update($candidate, $request->validated());
+
+        return ApiResponse::success($candidate, 'Candidate updated successfully');
+    }
+
+    public function destroy(Cadidate $candidate): JsonResponse
+    {
+        $this->candidateService->delete($candidate);
+
+        return ApiResponse::ok('Candidate deleted successfully');
+    }
+}
