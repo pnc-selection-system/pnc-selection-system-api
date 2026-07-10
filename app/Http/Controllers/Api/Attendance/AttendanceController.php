@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Attendance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AttendanceResource;
 use App\Services\Attendance\AttendanceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ class AttendanceController extends Controller
 {
     public function __construct(protected AttendanceService $service) {}
 
-    public function store(Request $request, int $infoSessionId): JsonResponse
+    public function store(Request $request, int $infoSession): JsonResponse
     {
         $request->validate([
             'total_students' => 'required|integer|min:0',
@@ -21,18 +22,18 @@ class AttendanceController extends Controller
             'notes' => 'nullable|string'
         ]);
 
-        $attendance = $this->service->createOrUpdate($infoSessionId, $request->all());
+        $attendance = $this->service->createOrUpdate($infoSession, $request->all());
         
         return response()->json([
             'success' => true,
             'message' => 'Attendance recorded successfully.',
-            'data' => $attendance
+            'data' => new AttendanceResource($attendance)
         ], 201);
     }
 
-    public function show(int $infoSessionId): JsonResponse
+    public function show(int $infoSession, int $attendance): JsonResponse
     {
-        $attendance = $this->service->findByInfoSessionId($infoSessionId);
+        $attendance = $this->service->findByInfoSessionId($infoSession);
         
         if (!$attendance) {
             return response()->json([
@@ -44,11 +45,11 @@ class AttendanceController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Attendance retrieved successfully.',
-            'data' => $attendance
+            'data' => new AttendanceResource($attendance)
         ]);
     }
 
-    public function update(Request $request, int $infoSessionId): JsonResponse
+    public function update(Request $request, int $infoSession, int $attendance): JsonResponse
     {
         $request->validate([
             'total_students' => 'required|integer|min:0',
@@ -58,12 +59,12 @@ class AttendanceController extends Controller
             'notes' => 'nullable|string'
         ]);
 
-        $attendance = $this->service->createOrUpdate($infoSessionId, $request->all());
+        $attendance = $this->service->createOrUpdate($infoSession, $request->all());
         
         return response()->json([
             'success' => true,
             'message' => 'Attendance updated successfully.',
-            'data' => $attendance
+            'data' => new AttendanceResource($attendance)
         ]);
     }
 }

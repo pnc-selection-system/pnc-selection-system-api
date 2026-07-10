@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\InformationSession;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\InfoSessionResource;
 use App\Services\InformationSession\InfoSessionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ class InfoSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Information sessions retrieved successfully.',
-            'data' => $sessions->items(),
+            'data' => InfoSessionResource::collection($sessions->items()),
             'pagination' => [
                 'total' => $sessions->total(),
                 'per_page' => $sessions->perPage(),
@@ -53,7 +54,7 @@ class InfoSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Information session created successfully.',
-            'data' => $session
+            'data' => new InfoSessionResource($session)
         ], 201);
     }
 
@@ -64,7 +65,7 @@ class InfoSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Information session retrieved successfully.',
-            'data' => $session
+            'data' => new InfoSessionResource($session)
         ]);
     }
 
@@ -88,7 +89,7 @@ class InfoSessionController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Information session updated successfully.',
-            'data' => $session
+            'data' => new InfoSessionResource($session)
         ]);
     }
 

@@ -5,7 +5,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
-})->middleware('auth:sanctum');
+})->middleware('auth:api');
 
-require base_path('routes/campaign.php');
-require base_path('routes/information-session.php');
+require __DIR__.'/campaign.php';
+require __DIR__.'/information-session.php';
+require __DIR__.'/Attendance.php';
+require __DIR__.'/InterestedStudent.php';
+require __DIR__.'/Auth.php';
+require __DIR__.'/Exam.php';
+require __DIR__.'/AssessmentForm.php';
+require __DIR__.'/NgoPartner.php';
+require __DIR__.'/SelectCampaing.php';
+require __DIR__.'/Candidate.php';
+require __DIR__.'/Province.php';
+require __DIR__.'/School.php';

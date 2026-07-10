@@ -7,15 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Province extends Model
 {
-    protected $fillable = ['name'];
+    protected $fillable = [
+        'name',
+    ];
 
-    public function schools(): HasMany
+    public function candidates()
     {
-        return $this->hasMany(School::class);
-    }
-
-    public function infoSessions(): HasMany
-    {
-        return $this->hasMany(InfoSession::class);
+        return $this->hasMany(Cadidate::class);
     }
 }
