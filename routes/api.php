@@ -8,7 +8,4 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:api');
 
 require __DIR__.'/Auth.php';
-require __DIR__.'/Exam.php';
-require __DIR__.'/AssessmentForm.php';
-require __DIR__.'/NgoPartner.php';
 require __DIR__.'/SelectCampaing.php';
