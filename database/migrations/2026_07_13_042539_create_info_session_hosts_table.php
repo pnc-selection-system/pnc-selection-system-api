@@ -8,15 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('provinces', function (Blueprint $table) {
+        Schema::create('info_session_hosts', function (Blueprint $table) {
             $table->id();
-            $table->string('name',100)->unique();
+
+            $table->foreignId('info_session_id')
+                ->constrained('info_sessions')
+                ->cascadeOnDelete();
+
+            $table->string('host_name', 150);
+
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('provinces');
+        Schema::dropIfExists('info_session_hosts');
     }
 };
