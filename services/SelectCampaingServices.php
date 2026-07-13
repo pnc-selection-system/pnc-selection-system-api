@@ -3,7 +3,7 @@
 namespace Services;
 
 use App\Models\SelectCampaing;
-use Repositories\SelectCampaingRepository;
+use App\Repositories\SelectCampaingRepository;
 
 class SelectCampaingServices
 {

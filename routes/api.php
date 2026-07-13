@@ -19,3 +19,5 @@ require __DIR__.'/SelectCampaing.php';
 require __DIR__.'/Candidate.php';
 require __DIR__.'/Province.php';
 require __DIR__.'/School.php';
+require __DIR__.'/Location.php';
+require __DIR__.'/PncOfficer.php';

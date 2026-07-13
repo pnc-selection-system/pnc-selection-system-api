@@ -2,76 +2,51 @@
 
 namespace App\Http\Controllers\Api\Campaign;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Campaign\StoreCampaignRequest;
 use App\Http\Requests\Campaign\UpdateCampaignRequest;
-use App\Services\Campaign\CampaignService;
+use App\Models\SelectCampaing;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Services\SelectCampaingServices;
 
 class CampaignController extends Controller
 {
-    public function __construct(protected CampaignService $service) {}
+    public function __construct(protected SelectCampaingServices $campaignService) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $filters = $request->only(['search', 'year', 'status', 'start_date_from', 'start_date_to', 'end_date_from', 'end_date_to']);
-        $perPage = $request->input('per_page', 15);
-        
-        $campaigns = $this->service->getPaginated($filters, $perPage);
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Campaigns retrieved successfully.',
-            'data' => $campaigns->items(),
-            'pagination' => [
-                'total' => $campaigns->total(),
-                'per_page' => $campaigns->perPage(),
-                'current_page' => $campaigns->currentPage(),
-                'last_page' => $campaigns->lastPage(),
-                'from' => $campaigns->firstItem(),
-                'to' => $campaigns->lastItem(),
-            ]
-        ]);
+        $campaigns = $this->campaignService->list(request()->all());
+
+        return ApiResponse::success($campaigns, 'Campaigns retrieved successfully');
     }
 
     public function store(StoreCampaignRequest $request): JsonResponse
     {
-        $campaign = $this->service->create($request->validated());
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Campaign created successfully.',
-            'data' => $campaign
-        ], 201);
+        $campaign = $this->campaignService->create($request->validated());
+
+        return ApiResponse::created($campaign, 'Campaign created successfully');
     }
 
-    public function show(int $id): JsonResponse
+    public function show(SelectCampaing $campaign): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'Campaign retrieved successfully.',
-            'data' => $this->service->findById($id)
-        ]);
+        return ApiResponse::success(
+            $this->campaignService->find($campaign),
+            'Campaign retrieved successfully'
+        );
     }
 
-    public function update(UpdateCampaignRequest $request, int $id): JsonResponse
+    public function update(UpdateCampaignRequest $request, SelectCampaing $campaign): JsonResponse
     {
-        $campaign = $this->service->update($id, $request->validated());
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Campaign updated successfully.',
-            'data' => $campaign
-        ]);
+        $campaign = $this->campaignService->update($campaign, $request->validated());
+
+        return ApiResponse::success($campaign, 'Campaign updated successfully');
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(SelectCampaing $campaign): JsonResponse
     {
-        $this->service->delete($id);
-        return response()->json([
-            'success' => true,
-            'message' => 'Campaign deleted successfully.'
-        ], 200);
+        $this->campaignService->delete($campaign);
+
+        return ApiResponse::ok('Campaign deleted successfully');
     }
 }

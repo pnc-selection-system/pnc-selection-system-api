@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\SelectCampaing;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\SelectCampaing\StoreSelectCampaingRequest;
-use App\Http\Requests\Api\SelectCampaing\UpdateSelectCampaingRequest;
+use App\Http\Requests\Campaign\StoreCampaignRequest;
+use App\Http\Requests\Campaign\UpdateCampaignRequest;
 use App\Models\SelectCampaing;
 use Illuminate\Http\JsonResponse;
 use Services\SelectCampaingServices;
@@ -23,7 +23,7 @@ class SelectCampaingController extends Controller
         return ApiResponse::success($selectCampaings, 'Selection campaigns retrieved successfully');
     }
 
-    public function store(StoreSelectCampaingRequest $request): JsonResponse
+    public function store(StoreCampaignRequest $request): JsonResponse
     {
         $selectCampaing = $this->selectCampaingService->create($request->validated());
 
@@ -38,7 +38,7 @@ class SelectCampaingController extends Controller
         );
     }
 
-    public function update(UpdateSelectCampaingRequest $request, SelectCampaing $selectCampaing): JsonResponse
+    public function update(UpdateCampaignRequest $request, SelectCampaing $selectCampaing): JsonResponse
     {
         $selectCampaing = $this->selectCampaingService->update($selectCampaing, $request->validated());
 

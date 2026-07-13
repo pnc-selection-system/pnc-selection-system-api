@@ -4,7 +4,7 @@ namespace Services;
 
 use App\Models\AssessmentForm;
 use Illuminate\Contracts\Validation\Validator;
-use Repositories\AssessmentFormRepository;
+use App\Repositories\AssessmentFormRepository;
 
 class AssessmentFormServices
 {

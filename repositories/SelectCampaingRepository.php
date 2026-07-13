@@ -1,6 +1,6 @@
 <?php
 
-namespace Repositories;
+namespace App\Repositories;
 
 use App\Models\SelectCampaing;
 use Illuminate\Database\Eloquent\Collection;
