@@ -5,27 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ExamSubject extends Model
+class ExamThreshold extends Model
 {
     protected $fillable = [
         'campaign_id',
-        'name',
-        'max_score',
-        'weight',
-        'deduction_rules',
+        'subject_id',
+        'pass_score',
     ];
 
     protected $casts = [
-        'max_score'       => 'decimal:2',
-        'weight'          => 'decimal:2',
-        'deduction_rules' => 'json',
+        'pass_score' => 'decimal:2',
     ];
 
-    /**
-     * The campaign this subject belongs to.
-     */
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(SelectCampaing::class, 'campaign_id');
+    }
+
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(ExamSubject::class, 'subject_id');
     }
 }

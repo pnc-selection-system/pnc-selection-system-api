@@ -15,3 +15,7 @@ require __DIR__.'/SelectCampaing.php';
 require __DIR__.'/Candidate.php';
 require __DIR__.'/Province.php';
 require __DIR__.'/School.php';
+require __DIR__.'/ExamSubject.php';
+require __DIR__.'/ExamConfig.php';
+require __DIR__.'/ExamImport.php';
+require __DIR__.'/ExamResult.php';
