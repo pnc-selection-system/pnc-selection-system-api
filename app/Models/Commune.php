@@ -10,7 +10,7 @@ class Commune extends Model
 {
     protected $fillable = [
         'district_id',
-        'name'
+        'name',
     ];
 
     public function district(): BelongsTo

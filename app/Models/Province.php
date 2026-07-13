@@ -8,11 +8,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Province extends Model
 {
     protected $fillable = [
-        'name'
+        'name',
     ];
 
     public function districts(): HasMany
     {
         return $this->hasMany(District::class);
+    }
+
+    public function schools(): HasMany
+    {
+        return $this->hasMany(School::class);
     }
 }
