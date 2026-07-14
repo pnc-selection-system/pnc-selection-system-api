@@ -15,7 +15,7 @@ return new class extends Migration
             $table->integer('condidate_total');
             $table->date('start_date');
             $table->date('end_date');
-            $table->enum('status', ['Draft', 'Active', 'Closed'])->default('Draft');
+            $table->enum('status', ['Active', 'Closed'])->default('Active');
             $table->timestamps();
         });
     }

@@ -35,6 +35,7 @@ class SelectCampaingRepository
     public function update(SelectCampaing $selectCampaing, array $data): SelectCampaing
     {
         $selectCampaing->update($data);
+        $selectCampaing->refresh();
 
         return $selectCampaing;
     }

@@ -8,11 +8,6 @@ return new class extends Migration
 {
     public function up()
     {
-
-
-
-
-
         Schema::create('candidate_status_histories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('candidate_id')->constrained()->onDelete('cascade');
@@ -21,7 +16,6 @@ return new class extends Migration
             $table->dateTime('changed_at');
             $table->timestamps();
         });
-
     }
 
     public function down()
