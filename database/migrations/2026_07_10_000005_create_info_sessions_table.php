@@ -12,18 +12,18 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('campaign_id')
+                ->constrained('selection_campaigns')
+                ->cascadeOnDelete();
+
+            $table->foreignId('village_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
-            $table->foreignId('school_id')
-                ->constrained()
-                ->cascadeOnDelete();
+            $table->string('school_name', 150);
 
             $table->date('session_date');
 
             $table->time('session_time');
-
-            $table->string('location');
 
             $table->unsignedInteger('expected_attendance');
 
