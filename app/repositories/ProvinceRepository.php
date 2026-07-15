@@ -37,6 +37,6 @@ class ProvinceRepository
 
     public function delete(Province $province): void
     {
-        $province->delete($province);
+        $province->delete();
     }
 }
