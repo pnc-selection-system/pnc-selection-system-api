@@ -41,6 +41,6 @@ class ExamRepository
 
     public function delete(Exam $exam): void
     {
-        $exam->delete();
+        $exam->delete($exam);
     }
 }

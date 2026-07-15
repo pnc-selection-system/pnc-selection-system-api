@@ -45,6 +45,6 @@ class NgoPartnerRepository
 
     public function delete(NgoPartner $ngoPartner): void
     {
-        $ngoPartner->delete();
+        $ngoPartner->delete($ngoPartner);
     }
 }

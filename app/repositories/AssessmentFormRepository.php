@@ -37,6 +37,6 @@ class AssessmentFormRepository
 
     public function delete(AssessmentForm $assessmentForm): void
     {
-        $assessmentForm->delete();
+        $assessmentForm->delete($assessmentForm);
     }
 }
