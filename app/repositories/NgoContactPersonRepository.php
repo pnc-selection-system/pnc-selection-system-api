@@ -15,7 +15,8 @@ class NgoContactPersonRepository
             $query->where(function ($q) use ($filters) {
                 $q->where('full_name', 'like', '%'.$filters['search'].'%')
                   ->orWhere('email', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('phone', 'like', '%'.$filters['search'].'%');
+                  ->orWhere('phone', 'like', '%'.$filters['search'].'%')
+                  ->orWhere('role', 'like', '%'.$filters['search'].'%');
             });
         }
 

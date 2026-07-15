@@ -12,6 +12,7 @@ class UpdateContactPersonRequest extends FormRequest
             'full_name' => 'sometimes|required|string|max:100',
             'email' => 'sometimes|required|email|max:100',
             'phone' => 'sometimes|required|string|max:30',
+            'role' => 'nullable|string|max:100',
         ];
     }
 }

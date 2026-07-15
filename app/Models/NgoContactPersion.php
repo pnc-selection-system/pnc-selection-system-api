@@ -14,6 +14,7 @@ class NgoContactPersion extends Model
         'full_name',
         'email',
         'phone',
+        'role',
     ];
 
     public function ngoPartner(): BelongsTo
