@@ -16,7 +16,7 @@ class ExamController extends Controller
 
     public function index(): JsonResponse
     {
-        $exams = $this->examService->list(request()->all());
+        $exams = $this->examService->list(request()->only(['campaign_id', 'publish_status', 'per_page']));
 
         return ApiResponse::success($exams, 'Exams retrieved successfully');
     }
@@ -39,7 +39,7 @@ class ExamController extends Controller
     public function update(UpdateExamRequest $request, Exam $exam): JsonResponse
     {
         $exam = $this->examService->update($exam, $request->validated());
-
+        
         return ApiResponse::success($exam, 'Exam updated successfully');
     }
 

@@ -7,19 +7,20 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ExamRepository
 {
-    public function list(array $filters = []): Collection
+    public function list(array $filters = [])
     {
-        $query = Exam::query();
-
-        if (! empty($filters['campaign_id'])) {
-            $query->where('campaign_id', (int) $filters['campaign_id']);
-        }
-
-        if (array_key_exists('publish_status', $filters)) {
-            $query->where('publish_status', filter_var($filters['publish_status'], FILTER_VALIDATE_BOOLEAN));
-        }
-
-        return $query->latest()->get();
+        return Exam::select('id', 'campaign_id', 'exam_date', 'publish_status', 'created_at')
+            ->with('campaign:id,name,year,status')
+            ->when(
+                !empty($filters['campaign_id']),
+                fn($q) => $q->where('campaign_id', (int) $filters['campaign_id'])
+            )
+            ->when(
+                array_key_exists('publish_status', $filters),
+                fn($q) => $q->where('publish_status', filter_var($filters['publish_status'], FILTER_VALIDATE_BOOLEAN))
+            )
+            ->latest('id')
+            ->paginate($filters['per_page'] ?? 10);
     }
 
     public function create(array $data): Exam

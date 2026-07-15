@@ -18,7 +18,7 @@ class SelectCampaingController extends Controller
 
     public function index(): JsonResponse
     {
-        $selectCampaings = $this->selectCampaingService->list(request()->all());
+        $selectCampaings = $this->selectCampaingService->list(request()->only(['status', 'year', 'per_page']));
 
         return ApiResponse::success($selectCampaings, 'Selection campaigns retrieved successfully');
     }

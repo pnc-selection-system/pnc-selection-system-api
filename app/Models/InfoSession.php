@@ -15,6 +15,8 @@ class InfoSession extends Model
         'session_time',
         'expected_attendance',
         'attendance_count',
+        'partner_type',
+        'ngo_name',
     ];
 
     protected $casts = [
