@@ -12,6 +12,7 @@ class StoreContactPersonRequest extends FormRequest
             'full_name' => 'required|string|max:100',
             'email' => 'required|email|max:100',
             'phone' => 'required|string|max:30',
+            'role' => 'nullable|string|max:100',
         ];
     }
 }

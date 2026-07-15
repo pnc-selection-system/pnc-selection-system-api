@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\HomeInvestigation;
 
+use App\Models\Candidate;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -46,6 +47,7 @@ class StoreHomeInvestigationRequest extends FormRequest
         return [
             'candidate_id.required' => 'The candidate is required.',
             'candidate_id.exists' => 'The selected candidate is invalid.',
+            'candidate_id.valid_ngo' => 'The selected candidate has an invalid NGO reference.',
             'visit_date.required' => 'The visit date is required.',
             'visit_date.date' => 'The visit date must be a valid date.',
             'location.required' => 'The location is required.',
@@ -53,5 +55,22 @@ class StoreHomeInvestigationRequest extends FormRequest
             'status.required' => 'The status is required.',
             'status.in' => 'The status must be one of: Assigned, In Progress, Submitted, Reviewed.',
         ];
+    }
+
+    /**
+     * Configure the validator instance.
+     */
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    {
+        $validator->after(function ($validator) {
+            $candidate = Candidate::with('ngoPartner')->find($this->candidate_id);
+
+            if ($candidate && $candidate->ngo_id && ! $candidate->ngoPartner) {
+                $validator->errors()->add(
+                    'candidate_id',
+                    'The selected candidate has an invalid NGO reference.'
+                );
+            }
+        });
     }
 }

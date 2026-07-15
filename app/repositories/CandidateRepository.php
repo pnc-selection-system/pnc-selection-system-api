@@ -2,14 +2,14 @@
 
 namespace Repositories;
 
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use Illuminate\Database\Eloquent\Collection;
 
 class CandidateRepository
 {
     public function list(array $filters = []): Collection
     {
-        $query = Cadidate::query();
+        $query = Candidate::query();
 
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
@@ -47,25 +47,25 @@ class CandidateRepository
         return $query->with(['campaign', 'province', 'school', 'referringNgo'])->latest()->get();
     }
 
-    public function create(array $data): Cadidate
+    public function create(array $data): Candidate
     {
-        return Cadidate::create($data);
+        return Candidate::create($data);
     }
 
-    public function find(Cadidate $candidate): Cadidate
+    public function find(Candidate $candidate): Candidate
     {
         return $candidate;
     }
 
-    public function update(Cadidate $candidate, array $data): Cadidate
+    public function update(Candidate $candidate, array $data): Candidate
     {
         $candidate->update($data);
 
         return $candidate;
     }
 
-    public function delete(Cadidate $candidate): void
+    public function delete(Candidate $candidate): void
     {
-        $candidate->delete();
+        $candidate->delete($candidate);
     }
 }

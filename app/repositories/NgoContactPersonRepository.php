@@ -9,13 +9,15 @@ class NgoContactPersonRepository
 {
     public function list(int $ngoPartnerId, array $filters = []): Collection
     {
-        $query = NgoContactPersion::where('ngo_partner_id', $ngoPartnerId);
+        $query = NgoContactPersion::query()
+            ->where('ngo_partner_id', $ngoPartnerId);
 
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('full_name', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('email', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('phone', 'like', '%'.$filters['search'].'%');
+                $q->where('full_name', 'like', '%' . $filters['search'] . '%')
+                ->orWhere('email', 'like', '%' . $filters['search'] . '%')
+                ->orWhere('phone', 'like', '%' . $filters['search'] . '%')
+                ->orWhere('role', 'like', '%' . $filters['search'] . '%');
             });
         }
 

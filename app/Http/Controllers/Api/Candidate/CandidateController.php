@@ -6,7 +6,7 @@ use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Candidate\StoreCandidateRequest;
 use App\Http\Requests\Api\Candidate\UpdateCandidateRequest;
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use Illuminate\Http\JsonResponse;
 use Services\CandidateServices;
 
@@ -28,7 +28,7 @@ class CandidateController extends Controller
         return ApiResponse::created($candidate, 'Candidate created successfully');
     }
 
-    public function show(Cadidate $candidate): JsonResponse
+    public function show(Candidate $candidate): JsonResponse
     {
         return ApiResponse::success(
             $this->candidateService->find($candidate),
@@ -36,14 +36,14 @@ class CandidateController extends Controller
         );
     }
 
-    public function update(UpdateCandidateRequest $request, Cadidate $candidate): JsonResponse
+    public function update(UpdateCandidateRequest $request, Candidate $candidate): JsonResponse
     {
         $candidate = $this->candidateService->update($candidate, $request->validated());
 
         return ApiResponse::success($candidate, 'Candidate updated successfully');
     }
 
-    public function destroy(Cadidate $candidate): JsonResponse
+    public function destroy(Candidate $candidate): JsonResponse
     {
         $this->candidateService->delete($candidate);
 

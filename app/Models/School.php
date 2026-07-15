@@ -20,6 +20,6 @@ class School extends Model
 
     public function candidates()
     {
-        return $this->hasMany(Cadidate::class);
+        return $this->hasMany(Candidate::class);
     }
 }

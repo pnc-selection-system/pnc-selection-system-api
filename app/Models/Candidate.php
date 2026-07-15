@@ -60,4 +60,8 @@ class Candidate extends Model
     {
         return $this->belongsTo(NgoPartner::class, 'ngo_id');
     }
+    public function ngoPartner()
+    {
+        return $this->belongsTo(NgoPartner::class, 'ngo_id');
+    }
 }

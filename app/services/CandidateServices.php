@@ -2,7 +2,7 @@
 
 namespace Services;
 
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use Repositories\CandidateRepository;
 
 class CandidateServices
@@ -14,22 +14,22 @@ class CandidateServices
         return $this->candidateRepository->list($filters);
     }
 
-    public function create(array $data): Cadidate
+    public function create(array $data): Candidate
     {
         return $this->candidateRepository->create($data);
     }
 
-    public function find(Cadidate $candidate): Cadidate
+    public function find(Candidate $candidate): Candidate
     {
         return $this->candidateRepository->find($candidate);
     }
 
-    public function update(Cadidate $candidate, array $data): Cadidate
+    public function update(Candidate $candidate, array $data): Candidate
     {
         return $this->candidateRepository->update($candidate, $data);
     }
 
-    public function delete(Cadidate $candidate): void
+    public function delete(Candidate $candidate): void
     {
         $this->candidateRepository->delete($candidate);
     }
