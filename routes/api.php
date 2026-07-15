@@ -13,3 +13,6 @@ require __DIR__.'/AssessmentForm.php';
 require __DIR__.'/NgoPartner.php';
 require __DIR__.'/SelectCampaing.php';
 require __DIR__.'/HomeInvestigation.php';
+require __DIR__.'/Candidate.php';
+require __DIR__.'/Province.php';
+require __DIR__.'/School.php';

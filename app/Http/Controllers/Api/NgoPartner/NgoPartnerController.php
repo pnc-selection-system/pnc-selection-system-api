@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\NgoPartner;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\NgoPartner\StoreNgoPartnerRequest;
 use App\Http\Requests\Api\NgoPartner\UpdateNgoPartnerRequest;
@@ -17,51 +18,42 @@ class NgoPartnerController extends Controller
     {
         $ngoPartners = $this->ngoPartnerService->list(request()->all());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'NGO partners retrieved successfully',
-            'data' => $ngoPartners,
-        ]);
+        return ApiResponse::success($ngoPartners, 'NGO partners retrieved successfully');
     }
 
     public function store(StoreNgoPartnerRequest $request): JsonResponse
     {
         $ngoPartner = $this->ngoPartnerService->create($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'NGO partner created successfully',
-            'data' => $ngoPartner,
-        ], 201);
+        return ApiResponse::created($ngoPartner, 'NGO partner created successfully');
     }
 
     public function show(NgoPartner $ngoPartner): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'message' => 'NGO partner retrieved successfully',
-            'data' => $this->ngoPartnerService->find($ngoPartner),
-        ]);
+        return ApiResponse::success(
+            $this->ngoPartnerService->find($ngoPartner),
+            'NGO partner retrieved successfully'
+        );
     }
 
     public function update(UpdateNgoPartnerRequest $request, NgoPartner $ngoPartner): JsonResponse
     {
         $ngoPartner = $this->ngoPartnerService->update($ngoPartner, $request->validated());
 
-        return response()->json([
-            'success' => true,
-            'message' => 'NGO partner updated successfully',
-            'data' => $ngoPartner,
-        ]);
+        return ApiResponse::success($ngoPartner, 'NGO partner updated successfully');
     }
 
     public function destroy(NgoPartner $ngoPartner): JsonResponse
     {
         $this->ngoPartnerService->delete($ngoPartner);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'NGO partner deleted successfully',
-        ]);
+        return ApiResponse::ok('NGO partner deleted successfully');
+    }
+
+    public function candidates(NgoPartner $ngoPartner): JsonResponse
+    {
+        $candidates = $this->ngoPartnerService->candidates($ngoPartner->id, request()->all());
+
+        return ApiResponse::success($candidates, 'Candidates retrieved successfully');
     }
 }

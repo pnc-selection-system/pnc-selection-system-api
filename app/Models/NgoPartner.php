@@ -25,4 +25,9 @@ class NgoPartner extends Model
     {
         return $this->hasMany(NgoContactPersion::class, 'ngo_partner_id');
     }
+
+    public function candidates(): HasMany
+    {
+        return $this->hasMany(Cadidate::class, 'ngo_id');
+    }
 }

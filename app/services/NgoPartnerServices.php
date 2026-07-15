@@ -2,7 +2,9 @@
 
 namespace Services;
 
+use App\Models\NgoContactPersion;
 use App\Models\NgoPartner;
+use Illuminate\Database\Eloquent\Collection;
 use Repositories\NgoPartnerRepository;
 
 class NgoPartnerServices
@@ -32,5 +34,35 @@ class NgoPartnerServices
     public function delete(NgoPartner $ngoPartner): void
     {
         $this->ngoPartnerRepository->delete($ngoPartner);
+    }
+
+    public function candidates(int $ngoId, array $filters = []): Collection
+    {
+        return $this->ngoPartnerRepository->candidates($ngoId, $filters);
+    }
+
+    public function listContactPersons(int $ngoPartnerId, array $filters = []): Collection
+    {
+        return $this->ngoPartnerRepository->listContactPersons($ngoPartnerId, $filters);
+    }
+
+    public function createContactPerson(int $ngoPartnerId, array $data): NgoContactPersion
+    {
+        return $this->ngoPartnerRepository->createContactPerson($ngoPartnerId, $data);
+    }
+
+    public function findContactPerson(NgoContactPersion $contactPerson): NgoContactPersion
+    {
+        return $this->ngoPartnerRepository->findContactPerson($contactPerson);
+    }
+
+    public function updateContactPerson(NgoContactPersion $contactPerson, array $data): NgoContactPersion
+    {
+        return $this->ngoPartnerRepository->updateContactPerson($contactPerson, $data);
+    }
+
+    public function deleteContactPerson(NgoContactPersion $contactPerson): void
+    {
+        $this->ngoPartnerRepository->deleteContactPerson($contactPerson);
     }
 }
