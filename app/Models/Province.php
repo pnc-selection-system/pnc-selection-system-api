@@ -11,11 +11,11 @@ class Province extends Model
         'name',
     ];
 
-<<<<<<< HEAD
     public function candidates()
     {
-        return $this->hasMany(Cadidate::class);
-=======
+        return $this->hasMany(Candidate::class);
+
+    }
     public function districts(): HasMany
     {
         return $this->hasMany(District::class);
@@ -24,6 +24,5 @@ class Province extends Model
     public function schools(): HasMany
     {
         return $this->hasMany(School::class);
->>>>>>> origin/feat-address
     }
 }
