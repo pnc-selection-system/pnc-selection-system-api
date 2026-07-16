@@ -15,8 +15,7 @@ class CandidateRepository
             $query->where(function ($q) use ($filters) {
                 $q->where('first_name', 'like', '%'.$filters['search'].'%')
                   ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('phone', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('email', 'like', '%'.$filters['search'].'%');
+                  ->orWhere('phone', 'like', '%'.$filters['search'].'%');
             });
         }
 
@@ -28,8 +27,8 @@ class CandidateRepository
             $query->where('province_id', (int) $filters['province_id']);
         }
 
-        if (! empty($filters['school_id'])) {
-            $query->where('school_id', (int) $filters['school_id']);
+        if (! empty($filters['school_name'])) {
+            $query->where('school_name', 'like', '%'.$filters['school_name'].'%');
         }
 
         if (! empty($filters['ngo_id'])) {
@@ -44,7 +43,7 @@ class CandidateRepository
             $query->where('status', $filters['status']);
         }
 
-        return $query->with(['campaign', 'province', 'school', 'referringNgo'])->latest()->get();
+        return $query->with(['campaign', 'province', 'referringNgo'])->latest()->get();
     }
 
     public function create(array $data): Cadidate

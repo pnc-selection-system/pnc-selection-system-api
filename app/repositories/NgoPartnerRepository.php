@@ -58,8 +58,7 @@ class NgoPartnerRepository
             $query->where(function ($q) use ($filters) {
                 $q->where('first_name', 'like', '%'.$filters['search'].'%')
                   ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('phone', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('email', 'like', '%'.$filters['search'].'%');
+                  ->orWhere('phone', 'like', '%'.$filters['search'].'%');
             });
         }
 
@@ -75,7 +74,7 @@ class NgoPartnerRepository
             $query->where('gender', $filters['gender']);
         }
 
-        return $query->with(['campaign', 'province', 'school'])->latest()->get();
+        return $query->with(['campaign', 'province'])->latest()->get();
     }
 
     public function listContactPersons(int $ngoPartnerId, array $filters = []): Collection
