@@ -191,7 +191,7 @@ class ExamConfigServices
                 $adjusted = max(0, $adjusted);
             }
         }
-
+        
         return max(0, min($adjusted, $maxScore));
     }
 }
