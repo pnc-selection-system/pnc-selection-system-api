@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\NgoPartner\ContactPersonController;
 use App\Http\Controllers\Api\NgoPartner\NgoPartnerController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware('jwt.auth')->group(function () {
     Route::apiResource('ngo-partners', NgoPartnerController::class);
 
     // Contact persons sub-resource
