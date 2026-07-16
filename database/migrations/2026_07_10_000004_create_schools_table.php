@@ -10,9 +10,15 @@ return new class extends Migration
     {
         Schema::create('schools', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('province_id')->constrained('provinces')->onDelete('cascade');
+
+            $table->foreignId('village_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
             $table->string('name', 150);
-            $table->text('address')->nullable();
+
+            $table->string('address')->nullable();
+
             $table->timestamps();
         });
     }

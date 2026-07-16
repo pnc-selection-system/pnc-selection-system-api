@@ -17,3 +17,4 @@ require __DIR__.'/Province.php';
 require __DIR__.'/District.php';
 require __DIR__.'/Commune.php';
 require __DIR__.'/Candidate.php';
+require __DIR__.'/infoSession.php';

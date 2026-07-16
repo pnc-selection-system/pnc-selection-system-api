@@ -9,12 +9,13 @@ class DistrictRepository
 {
     public function list(array $filters = []): Collection
     {
-        $query = District::with('province');
-
-        if (!empty($filters['province_id'])) {
-            $query->where('province_id', (int) $filters['province_id']);
-        }
-
-        return $query->latest()->get();
+        return District::select('id', 'province_id', 'name')
+            ->with('province:id,name')
+            ->when(
+                !empty($filters['province_id']),
+                fn($q) => $q->where('province_id', (int) $filters['province_id'])
+            )
+            ->latest('id')
+            ->get();
     }
 }

@@ -9,12 +9,13 @@ class CommuneRepository
 {
     public function list(array $filters = []): Collection
     {
-        $query = Commune::with('district');
-
-        if (!empty($filters['district_id'])) {
-            $query->where('district_id', (int) $filters['district_id']);
-        }
-
-        return $query->latest()->get();
+        return Commune::select('id', 'district_id', 'name')
+            ->with('district:id,province_id,name')
+            ->when(
+                !empty($filters['district_id']),
+                fn($q) => $q->where('district_id', (int) $filters['district_id'])
+            )
+            ->latest('id')
+            ->get();
     }
 }

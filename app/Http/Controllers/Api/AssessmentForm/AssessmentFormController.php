@@ -16,7 +16,7 @@ class AssessmentFormController extends Controller
 
     public function index(): JsonResponse
     {
-        $assessmentForms = $this->assessmentFormService->list(request()->all());
+        $assessmentForms = $this->assessmentFormService->list(request()->only(['campaign_id', 'per_page']));
 
         return ApiResponse::success($assessmentForms, 'Assessment forms retrieved successfully');
     }
