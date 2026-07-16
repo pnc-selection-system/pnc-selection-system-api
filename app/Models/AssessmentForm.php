@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Validator as ValidatorFacade;
 
 class AssessmentForm extends Model
@@ -22,6 +23,11 @@ class AssessmentForm extends Model
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(SelectCampaing::class, 'campaign_id');
+    }
+
+    public function responses(): HasMany
+    {
+        return $this->hasMany(AssessmentRespone::class, 'form_id');
     }
 
     public function fields(): array

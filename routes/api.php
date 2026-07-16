@@ -12,3 +12,4 @@ require __DIR__.'/Exam.php';
 require __DIR__.'/AssessmentForm.php';
 require __DIR__.'/NgoPartner.php';
 require __DIR__.'/SelectCampaing.php';
+require __DIR__.'/AssessmentResponse.php';

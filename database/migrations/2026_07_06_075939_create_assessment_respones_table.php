@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('candidate_id')->constrained()->onDelete('cascade');
             $table->foreignId('form_id')->constrained('assessment_forms')->onDelete('cascade');
             $table->json('answers');
-            $table->decimal('total_score', 6, 2)->nullable();
+            $table->decimal('total_score', 8, 2)->nullable();
             $table->timestamps();
         });
     }
