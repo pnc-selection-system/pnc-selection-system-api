@@ -9,14 +9,18 @@ class InfoSession extends Model
 {
     protected $fillable = [
         'campaign_id',
+        'province_id',
+        'district_id',
+        'commune_id',
         'village_id',
-        'school_name',
+        'school',
         'session_date',
         'session_time',
         'expected_attendance',
         'attendance_count',
         'partner_type',
-        'ngo_name',
+        'partner_name',
+        'host_by',
     ];
 
     protected $casts = [
@@ -26,6 +30,21 @@ class InfoSession extends Model
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(SelectCampaing::class);
+    }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
+    }
+
+    public function commune(): BelongsTo
+    {
+        return $this->belongsTo(Commune::class);
     }
 
     public function village(): BelongsTo

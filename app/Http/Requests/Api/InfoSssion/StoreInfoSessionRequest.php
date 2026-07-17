@@ -11,12 +11,23 @@ class StoreInfoSessionRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'school'       => $this->school ?? $this->school_name,
+            'partner_name' => $this->partner_name ?? $this->ngo_name,
+        ]);
+    }
+
     public function rules(): array
     {
         return [
             'campaign_id'         => 'required|integer|exists:selection_campaigns,id',
+            'province_id'         => 'nullable|integer|exists:provinces,id',
+            'district_id'         => 'nullable|integer|exists:districts,id',
+            'commune_id'          => 'nullable|integer|exists:communes,id',
             'village_id'          => 'required|integer|exists:villages,id',
-            'school_name'         => 'required|string|max:150',
+            'school'              => 'required|string|max:150',
             'session_date'        => 'required|date',
             'session_time'        => ['sometimes', 'regex:/^([0-9]|0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/'],
             'expected_attendance' => 'required|integer|min:1',
@@ -24,7 +35,8 @@ class StoreInfoSessionRequest extends FormRequest
             'hosts'               => 'required|array|min:1',
             'hosts.*.host_name'   => 'required|string|max:150',
             'partner_type'        => 'nullable|string|in:NGO,Officer',
-            'ngo_name'            => 'nullable|string|max:150|required_if:partner_type,NGO',
+            'partner_name'        => 'nullable|string|max:150|required_if:partner_type,NGO',
+            'host_by'             => 'nullable|string|max:150',
         ];
     }
 }

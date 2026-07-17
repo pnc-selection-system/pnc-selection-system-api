@@ -10,10 +10,10 @@ class InfoSessionRepository
     {
         return InfoSession::with([
                 'hosts:id,info_session_id,host_name',
+                'province:id,name',
+                'district:id,name',
+                'commune:id,name',
                 'village:id,commune_id,name',
-                'village.commune:id,district_id,name',
-                'village.commune.district:id,province_id,name',
-                'village.commune.district.province:id,name',
                 'campaign:id,name',
             ])
             ->findOrFail($id);
@@ -48,12 +48,18 @@ class InfoSessionRepository
 
         $session->update(array_filter([
             'campaign_id'         => $data['campaign_id'] ?? null,
+            'province_id'         => $data['province_id'] ?? null,
+            'district_id'         => $data['district_id'] ?? null,
+            'commune_id'          => $data['commune_id'] ?? null,
             'village_id'          => $data['village_id'] ?? null,
-            'school_name'         => $data['school_name'] ?? null,
+            'school'              => $data['school'] ?? null,
             'session_date'        => $data['session_date'] ?? null,
             'session_time'        => $data['session_time'] ?? null,
             'expected_attendance' => $data['expected_attendance'] ?? null,
             'attendance_count'    => $data['attendance_count'] ?? null,
+            'partner_type'        => $data['partner_type'] ?? null,
+            'partner_name'        => $data['partner_name'] ?? null,
+            'host_by'             => $data['host_by'] ?? null,
         ], fn($v) => $v !== null));
 
         if (isset($data['hosts'])) {
@@ -70,19 +76,25 @@ class InfoSessionRepository
     {
         $session = InfoSession::create([
             'campaign_id'         => $data['campaign_id'],
+            'province_id'         => $data['province_id'] ?? null,
+            'district_id'         => $data['district_id'] ?? null,
+            'commune_id'          => $data['commune_id'] ?? null,
             'village_id'          => $data['village_id'],
-            'school_name'         => $data['school_name'],
+            'school'              => $data['school'],
             'session_date'        => $data['session_date'],
             'session_time'        => $data['session_time'],
             'expected_attendance' => $data['expected_attendance'],
             'attendance_count'    => $data['attendance_count'] ?? 0,
             'partner_type'        => $data['partner_type'] ?? null,
-            'ngo_name'            => $data['ngo_name'] ?? null,
+            'partner_name'        => $data['partner_name'] ?? null,
+            'host_by'             => $data['host_by'] ?? null,
         ]);
 
-        $session->hosts()->createMany(
-            array_map(fn($h) => ['host_name' => $h['host_name']], $data['hosts'])
-        );
+        if (isset($data['hosts']) && is_array($data['hosts'])) {
+            $session->hosts()->createMany(
+                array_map(fn($h) => ['host_name' => $h['host_name']], $data['hosts'])
+            );
+        }
 
         return $session->refresh()->load('hosts');
     }
