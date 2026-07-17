@@ -13,3 +13,5 @@ require __DIR__.'/AssessmentForm.php';
 require __DIR__.'/NgoPartner.php';
 require __DIR__.'/SelectCampaing.php';
 require __DIR__.'/AssessmentResponse.php';
+require __DIR__.'/InterestAssessmentApi.php';
+require __DIR__.'/Candidate.php';

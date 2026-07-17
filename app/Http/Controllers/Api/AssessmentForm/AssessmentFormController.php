@@ -30,10 +30,15 @@ class AssessmentFormController extends Controller
 
     public function show(AssessmentForm $assessmentForm): JsonResponse
     {
-        return ApiResponse::success(
-            $this->assessmentFormService->find($assessmentForm),
-            'Assessment form retrieved successfully'
-        );
+        $form = $this->assessmentFormService->find($assessmentForm);
+
+        return ApiResponse::success([
+            'id' => $form->id,
+            'campaign_id' => $form->campaign_id,
+            'name' => $form->name,
+            'pass_threshold' => (float) $form->pass_threshold,
+            'fields' => $form->fields(),
+        ], 'Assessment form retrieved successfully');
     }
 
     public function update(UpdateAssessmentFormRequest $request, AssessmentForm $assessmentForm): JsonResponse

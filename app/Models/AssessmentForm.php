@@ -14,10 +14,12 @@ class AssessmentForm extends Model
         'campaign_id',
         'name',
         'schema',
+        'pass_threshold',
     ];
 
     protected $casts = [
         'schema' => 'array',
+        'pass_threshold' => 'decimal:2',
     ];
 
     public function campaign(): BelongsTo
@@ -61,7 +63,7 @@ class AssessmentForm extends Model
                 $fieldRules[] = 'nullable';
             }
 
-            $numericTypes = ['number', 'rating'];
+            $numericTypes = ['number', 'rating', 'scale_1_5'];
 
             if (in_array($type, $numericTypes, true)) {
                 $fieldRules[] = 'numeric';
@@ -73,7 +75,7 @@ class AssessmentForm extends Model
                 if (isset($fieldRulesConfig['max'])) {
                     $fieldRules[] = 'max:'.$fieldRulesConfig['max'];
                 }
-            } elseif (in_array($type, ['select', 'radio', 'checkbox'], true)) {
+            } elseif (in_array($type, ['select', 'radio', 'checkbox', 'single_choice', 'multi_choice'], true)) {
                 $fieldRules[] = 'in:'.implode(',', (array) ($field['options'] ?? $fieldRulesConfig['in'] ?? []));
             } else {
                 $fieldRules[] = 'string';

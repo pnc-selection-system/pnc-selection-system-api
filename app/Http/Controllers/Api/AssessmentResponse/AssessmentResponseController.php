@@ -8,6 +8,8 @@ use App\Http\Requests\Api\AssessmentResponse\StoreAssessmentResponseRequest;
 use App\Http\Requests\Api\AssessmentResponse\UpdateAssessmentResponseRequest;
 use App\Models\AssessmentRespone;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Services\AssessmentResponseServices;
 
 class AssessmentResponseController extends Controller
@@ -50,20 +52,35 @@ class AssessmentResponseController extends Controller
         return ApiResponse::ok('Assessment response deleted successfully');
     }
 
-    public function submit(): JsonResponse
+    public function submit(Request $request): JsonResponse
     {
-        $validated = request()->validate([
-            'form_id' => 'required|integer|exists:assessment_forms,id',
-            'candidate_id' => 'required|integer|exists:cadidates,id',
-            'answers' => 'required|array',
+        $validated = $request->validate([
+            'form_id'      => 'required|integer|exists:assessment_forms,id',
+            'candidate_id' => 'required|integer|exists:candidates,id',
+            'answers'      => 'required|array',
         ]);
 
-        $response = $this->assessmentResponseService->submit(
-            $validated['form_id'],
-            $validated['candidate_id'],
-            $validated['answers']
-        );
+        try {
+            $response = $this->assessmentResponseService->submit(
+                $validated['form_id'],
+                $validated['candidate_id'],
+                $validated['answers']
+            );
+        } catch (ValidationException $e) {
+            return ApiResponse::validationError('Invalid answers', $e->errors());
+        }
 
-        return ApiResponse::created($response, 'Assessment response submitted successfully');
+        $form = $response->form;
+        $passed = $form ? (float) $response->total_score >= (float) $form->pass_threshold : null;
+
+        return ApiResponse::created([
+            'id'           => $response->id,
+            'candidate_id' => $response->candidate_id,
+            'form_id'      => $response->form_id,
+            'answers'      => $response->answers,
+            'total_score'  => (float) $response->total_score,
+            'passed'       => $passed,
+            'pass_threshold' => $form ? (float) $form->pass_threshold : null,
+        ], 'Assessment response submitted successfully');
     }
 }

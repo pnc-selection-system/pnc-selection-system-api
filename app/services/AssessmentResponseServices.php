@@ -26,7 +26,7 @@ class AssessmentResponseServices
     public function find(AssessmentRespone $response): AssessmentRespone
     {
         return $this->assessmentResponseRepository->find($response);
-    }
+    } 
 
     public function update(AssessmentRespone $response, array $data): AssessmentRespone
     {

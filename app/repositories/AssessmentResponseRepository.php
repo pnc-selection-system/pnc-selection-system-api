@@ -24,7 +24,7 @@ class AssessmentResponseRepository
 
     public function create(array $data): AssessmentRespone
     {
-        return AssessmentRespone::create($data);
+        return AssessmentRespone::create($data)->load('form');
     }
 
     public function find(AssessmentRespone $response): AssessmentRespone
@@ -36,7 +36,7 @@ class AssessmentResponseRepository
     {
         $response->update($data);
 
-        return $response;
+        return $response->load('form');
     }
 
     public function delete(AssessmentRespone $response): void
