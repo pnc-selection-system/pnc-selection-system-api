@@ -8,17 +8,16 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('schools', function (Blueprint $table) {
+        Schema::create('villages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('province_id')->constrained('provinces')->onDelete('cascade');
+            $table->foreignId('commune_id')->constrained('communes')->onDelete('cascade');
             $table->string('name', 150);
-            $table->text('address')->nullable();
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('schools');
+        Schema::dropIfExists('villages');
     }
 };

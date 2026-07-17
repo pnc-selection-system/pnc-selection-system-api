@@ -33,7 +33,7 @@ class AuthServices
             ];
         }
 
-        $user = Auth::user();
+        $user = Auth::user()->load('role:id,name');
 
         if (!$user->active) {
             JWTAuth::invalidate(JWTAuth::getToken());
@@ -54,7 +54,7 @@ class AuthServices
                     'id'    => $user->id,
                     'name'  => $user->name,
                     'email' => $user->email,
-                    'role'  => $user->role->name ?? 'User',
+                    'role'  => $user->role?->name ?? 'User',
                 ],
                 'access_token' => $token,
                 'token_type'   => 'Bearer',

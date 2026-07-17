@@ -3,8 +3,43 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Cadidate extends Model
 {
-    //
+    protected $table = 'candidates';
+
+    protected $fillable = [
+        'campaign_id',
+        'province_id',
+        'school_name',
+        'ngo_id',
+        'first_name',
+        'last_name',
+        'first_name_kh',
+        'last_name_kh',
+        'gender',
+        'dob',
+        'phone',
+        'status',
+    ];
+
+    protected $casts = [
+        'dob' => 'date',
+    ];
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(SelectCampaing::class, 'campaign_id');
+    }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    public function referringNgo(): BelongsTo
+    {
+        return $this->belongsTo(NgoPartner::class, 'ngo_id');
+    }
 }

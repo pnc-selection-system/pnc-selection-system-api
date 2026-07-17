@@ -9,3 +9,9 @@ Route::get('/user', function (Request $request) {
 
 require __DIR__.'/Auth.php';
 require __DIR__.'/SelectCampaing.php';
+require __DIR__.'/Village.php';
+require __DIR__.'/Province.php';
+require __DIR__.'/District.php';
+require __DIR__.'/Commune.php';
+require __DIR__.'/Candidate.php';
+require __DIR__.'/infoSession.php';
