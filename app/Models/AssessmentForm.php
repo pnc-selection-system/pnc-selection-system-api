@@ -143,13 +143,36 @@ class AssessmentForm extends Model
 
     public function normalizeValue(array $field, $value): float
     {
+        $type     = $field['type'] ?? 'text';
+        $pointMap = $field['point_map'] ?? null;
+
+        // Choice types: use point_map if available
+        if (in_array($type, ['single_choice', 'multi_choice', 'select', 'radio', 'checkbox'], true)) {
+            if (empty($pointMap)) {
+                return 0.0;
+            }
+
+            if ($type === 'multi_choice') {
+                $selected = is_array($value) ? $value : explode(',', (string) $value);
+                $points   = array_sum(array_map(fn ($v) => (float) ($pointMap[trim($v)] ?? 0), $selected));
+            } else {
+                $points = (float) ($pointMap[(string) $value] ?? 0);
+            }
+
+            // Normalize against max possible points in the map
+            $maxPoints = $pointMap ? (float) max(array_values($pointMap)) : 1.0;
+
+            return $maxPoints > 0 ? max(0.0, min(1.0, $points / $maxPoints)) : 0.0;
+        }
+
+        // Numeric types (scale_1_5, rating, number): normalize by min/max range
         if (! is_numeric($value)) {
             return 0.0;
         }
 
         $config = $field['rules'] ?? [];
-        $min = isset($config['min']) ? (float) $config['min'] : 0;
-        $max = isset($config['max']) ? (float) $config['max'] : null;
+        $min    = isset($config['min']) ? (float) $config['min'] : 0;
+        $max    = isset($config['max']) ? (float) $config['max'] : null;
 
         if ($max !== null && $max > $min) {
             $normalized = ((float) $value - $min) / ($max - $min);

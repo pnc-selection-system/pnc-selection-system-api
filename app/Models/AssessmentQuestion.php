@@ -14,16 +14,18 @@ class AssessmentQuestion extends Model
         'label',
         'type',
         'options',
+        'point_map',
         'rules',
         'weight',
         'order',
     ];
 
     protected $casts = [
-        'options' => 'array',
-        'rules'   => 'array',
-        'weight'  => 'decimal:2',
-        'order'   => 'integer',
+        'options'   => 'array',
+        'point_map' => 'array',
+        'rules'     => 'array',
+        'weight'    => 'decimal:2',
+        'order'     => 'integer',
     ];
 
     public function form(): BelongsTo

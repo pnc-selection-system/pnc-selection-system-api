@@ -96,6 +96,7 @@ class AssessmentResponseRepository
             'label'       => $q->label,
             'type'        => $q->type,
             'options'     => $q->options,
+            'point_map'   => $q->point_map,
             'weight'      => (float) $q->weight,
             'answer'      => $answeredMap->has($q->id) ? $answeredMap->get($q->id)->answer : null,
         ])->values()->toArray();
@@ -140,8 +141,9 @@ class AssessmentResponseRepository
             }
 
             $field = [
-                'type'  => $question->type,
-                'rules' => $question->rules ?? [],
+                'type'      => $question->type,
+                'rules'     => $question->rules ?? [],
+                'point_map' => $question->point_map ?? null,
             ];
 
             $normalized    = $form->normalizeValue($field, $row->answer);

@@ -57,14 +57,15 @@ class AssessmentFormController extends Controller
         }
 
         $questions = $assessmentForm->questions()->orderBy('order')->get()->map(fn ($q) => [
-            'id'      => $q->id,
-            'key'     => $q->key,
-            'label'   => $q->label,
-            'type'    => $q->type,
-            'options' => $q->options,
-            'rules'   => $q->rules,
-            'weight'  => (float) $q->weight,
-            'order'   => $q->order,
+            'id'        => $q->id,
+            'key'       => $q->key,
+            'label'     => $q->label,
+            'type'      => $q->type,
+            'options'   => $q->options,
+            'point_map' => $q->point_map,
+            'rules'     => $q->rules,
+            'weight'    => (float) $q->weight,
+            'order'     => $q->order,
         ]);
 
         return ApiResponse::success($questions, 'Questions retrieved successfully');
@@ -73,18 +74,20 @@ class AssessmentFormController extends Controller
     public function addQuestion(Request $request, AssessmentForm $assessmentForm): JsonResponse
     {
         $request->validate([
-            'label'     => 'required|string|max:255',
-            'type'      => 'required|in:short_text,scale_1_5,single_choice,multi_choice,text,number,rating',
-            'options'   => 'nullable|array',
-            'options.*' => 'string',
-            'rules'     => 'nullable|array',
-            'weight'    => 'nullable|numeric|min:0|max:100',
+            'label'       => 'required|string|max:255',
+            'type'        => 'required|in:short_text,scale_1_5,single_choice,multi_choice,text,number,rating',
+            'options'     => 'nullable|array',
+            'options.*'   => 'string',
+            'point_map'   => 'nullable|array',
+            'point_map.*' => 'numeric',
+            'rules'       => 'nullable|array',
+            'weight'      => 'nullable|numeric|min:0|max:100',
         ]);
 
         // Generate a unique key from the label
-        $baseKey  = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $request->label));
-        $key      = $baseKey;
-        $counter  = 1;
+        $baseKey = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $request->label));
+        $key     = $baseKey;
+        $counter = 1;
         while (AssessmentQuestion::where('form_id', $assessmentForm->id)->where('key', $key)->exists()) {
             $key = $baseKey . '_' . $counter++;
         }
@@ -92,28 +95,29 @@ class AssessmentFormController extends Controller
         $order    = $assessmentForm->questions()->max('order') + 1;
 
         $question = AssessmentQuestion::create([
-            'form_id' => $assessmentForm->id,
-            'key'     => $key,
-            'label'   => $request->label,
-            'type'    => $request->type,
-            'options' => $request->options,
-            'rules'   => $request->rules ?? ['required' => false],
-            'weight'  => $request->weight ?? 0,
-            'order'   => $order,
+            'form_id'   => $assessmentForm->id,
+            'key'       => $key,
+            'label'     => $request->label,
+            'type'      => $request->type,
+            'options'   => $request->options,
+            'point_map' => $request->point_map,
+            'rules'     => $request->rules ?? ['required' => false],
+            'weight'    => $request->weight ?? 0,
+            'order'     => $order,
         ]);
 
-        // Sync back to form schema
         $this->syncSchemaFromQuestions($assessmentForm);
 
         return ApiResponse::created([
-            'id'      => $question->id,
-            'key'     => $question->key,
-            'label'   => $question->label,
-            'type'    => $question->type,
-            'options' => $question->options,
-            'rules'   => $question->rules,
-            'weight'  => (float) $question->weight,
-            'order'   => $question->order,
+            'id'        => $question->id,
+            'key'       => $question->key,
+            'label'     => $question->label,
+            'type'      => $question->type,
+            'options'   => $question->options,
+            'point_map' => $question->point_map,
+            'rules'     => $question->rules,
+            'weight'    => (float) $question->weight,
+            'order'     => $question->order,
         ], 'Question added successfully');
     }
 
@@ -148,12 +152,13 @@ class AssessmentFormController extends Controller
     private function syncSchemaFromQuestions(AssessmentForm $form): void
     {
         $fields = $form->questions()->orderBy('order')->get()->map(fn ($q) => array_filter([
-            'key'     => $q->key,
-            'label'   => $q->label,
-            'type'    => $q->type,
-            'options' => $q->options,
-            'rules'   => $q->rules ?? [],
-            'weight'  => (float) $q->weight,
+            'key'       => $q->key,
+            'label'     => $q->label,
+            'type'      => $q->type,
+            'options'   => $q->options,
+            'point_map' => $q->point_map,
+            'rules'     => $q->rules ?? [],
+            'weight'    => (float) $q->weight,
         ], fn ($v) => $v !== null))->values()->toArray();
 
         $form->update(['schema' => ['fields' => $fields]]);
@@ -165,14 +170,15 @@ class AssessmentFormController extends Controller
 
         foreach ($form->fields() as $index => $field) {
             AssessmentQuestion::create([
-                'form_id' => $form->id,
-                'key'     => $field['key'],
-                'label'   => $field['label'],
-                'type'    => $field['type'],
-                'options' => $field['options'] ?? null,
-                'rules'   => $field['rules'] ?? null,
-                'weight'  => $field['weight'] ?? 0,
-                'order'   => $index,
+                'form_id'   => $form->id,
+                'key'       => $field['key'],
+                'label'     => $field['label'],
+                'type'      => $field['type'],
+                'options'   => $field['options'] ?? null,
+                'point_map' => $field['point_map'] ?? null,
+                'rules'     => $field['rules'] ?? null,
+                'weight'    => $field['weight'] ?? 0,
+                'order'     => $index,
             ]);
         }
     }
