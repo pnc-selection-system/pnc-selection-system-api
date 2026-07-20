@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class School extends Model
 {
     protected $fillable = [
-        
+
         'village_id',
         'name',
     ];
@@ -30,4 +30,6 @@ class School extends Model
     {
         return $this->hasMany(InfoSession::class);
     }
+}
+
 }
