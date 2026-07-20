@@ -9,6 +9,6 @@ class ProvinceRepository
 {
     public function list(array $filters = []): Collection
     {
-        return Province::select('id', 'name')->latest('id')->get();
+        return Province::select('id', 'name')->orderBy('name')->get();
     }
 }
