@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\InterestAssessment;
 
+use App\Http\Controllers\Controller;
 use App\Models\AssessmentForm;
 use App\Models\InfoSession;
 use App\Models\InterestStudent;

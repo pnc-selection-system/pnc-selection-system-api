@@ -14,9 +14,10 @@ class StoreAssessmentResponseRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'form_id' => 'required|integer|exists:assessment_forms,id',
+            'form_id'      => 'required|integer|exists:assessment_forms,id',
             'candidate_id' => 'required|integer|exists:candidates,id',
-            'answers' => 'required|array',
+            'answers'      => 'required|array',
+            'answers.*'    => 'nullable',
         ];
     }
 }

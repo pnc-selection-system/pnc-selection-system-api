@@ -32,6 +32,11 @@ class AssessmentForm extends Model
         return $this->hasMany(AssessmentRespone::class, 'form_id');
     }
 
+    public function questions(): HasMany
+    {
+        return $this->hasMany(AssessmentQuestion::class, 'form_id')->orderBy('order');
+    }
+
     public function fields(): array
     {
         return $this->schema['fields'] ?? [];
@@ -136,7 +141,7 @@ class AssessmentForm extends Model
         return round($weightedScore / $totalWeight * 100, 2);
     }
 
-    protected function normalizeValue(array $field, $value): float
+    public function normalizeValue(array $field, $value): float
     {
         if (! is_numeric($value)) {
             return 0.0;

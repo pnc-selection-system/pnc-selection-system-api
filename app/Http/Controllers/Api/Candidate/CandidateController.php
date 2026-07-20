@@ -11,6 +11,20 @@ use Illuminate\Http\Request;
 class CandidateController extends Controller
 {
     /**
+     * GET /api/candidates
+     * List all candidates.
+     */
+    public function index(): JsonResponse
+    {
+        $candidates = Cadidate::with(['province'])
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($c) => $this->formatCandidate($c));
+
+        return ApiResponse::success($candidates, 'Candidates retrieved successfully');
+    }
+
+    /**
      * GET /api/candidates/search?q=C-1042
      * Search candidates by ID or code (e.g., C-1042).
      * Public endpoint - no authentication required.

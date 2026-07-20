@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\InterestAssessmentController;
+use App\Http\Controllers\Api\InterestAssessment\InterestAssessmentController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes - no authentication required

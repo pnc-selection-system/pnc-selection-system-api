@@ -11,14 +11,8 @@ class AssessmentRespone extends Model
 
     protected $fillable = [
         'candidate_id',
-        'form_id',
-        'answers',
-        'total_score',
-    ];
-
-    protected $casts = [
-        'answers' => 'array',
-        'total_score' => 'decimal:2',
+        'question_id',
+        'answer',
     ];
 
     public function candidate(): BelongsTo
@@ -26,8 +20,8 @@ class AssessmentRespone extends Model
         return $this->belongsTo(Cadidate::class, 'candidate_id');
     }
 
-    public function form(): BelongsTo
+    public function question(): BelongsTo
     {
-        return $this->belongsTo(AssessmentForm::class, 'form_id');
+        return $this->belongsTo(AssessmentQuestion::class, 'question_id');
     }
 }
