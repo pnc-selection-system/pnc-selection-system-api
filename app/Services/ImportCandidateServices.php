@@ -2,7 +2,7 @@
 
 namespace Services;
 
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use App\Models\ImportFile;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -309,7 +309,7 @@ class ImportCandidateServices
                 }
 
                 try {
-                    Cadidate::create($candidateData);
+                    Candidate::create($candidateData);
                     $importedCount++;
                 } catch (Exception $e) {
                     $errors[] = "Row {$rowNumber}: {$e->getMessage()}";
