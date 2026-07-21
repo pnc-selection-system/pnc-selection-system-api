@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api\ExamSubject;
 
+use App\Models\ExamSubject;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreExamSubjectRequest extends FormRequest
 {
@@ -18,6 +20,35 @@ class StoreExamSubjectRequest extends FormRequest
             'name'           => ['required', 'string', 'max:100'],
             'max_score'      => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'weight'         => ['nullable', 'numeric', 'min:0', 'max:99.99'],
+            'rules'          => ['nullable', 'array'],
+            'rules.*.name'   => ['required', 'string', 'max:100'],
+            'rules.*.desc'   => ['nullable', 'string'],
+            'rules.*.sign'   => ['required', 'in:+,-,*,%'],
+            'rules.*.value'  => ['required', 'numeric', 'min:0', 'max:999.99'],
+            'rules.*.status' => ['nullable', 'in:active,inactive'],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator) {
+                $campaignId = (int) $this->input('campaign_id');
+                $newWeight = (float) ($this->input('weight') ?? 0);
+
+                $currentTotalWeight = ExamSubject::where('campaign_id', $campaignId)
+                    ->where('is_delete', false)
+                    ->sum('weight');
+
+                $newTotal = $currentTotalWeight + $newWeight;
+
+                if ($newTotal > 100) {
+                    $validator->errors()->add(
+                        'weight',
+                        "Total weight would exceed 100%. Current total: {$currentTotalWeight}% + new: {$newWeight}% = {$newTotal}%"
+                    );
+                }
+            },
         ];
     }
 

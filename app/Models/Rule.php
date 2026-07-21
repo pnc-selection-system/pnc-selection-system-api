@@ -5,24 +5,24 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class ExamSubject extends Model
+class Rule extends Model
 {
-    protected $table = 'exam_subjects';
+    protected $table = 'rules';
 
     protected $fillable = [
-        'campaign_id',
+        'exam_subject_id',
         'name',
-        'max_score',
-        'weight',
+        'desc',
+        'sign',
+        'value',
+        'status',
         'is_delete',
     ];
 
     protected $casts = [
-        'max_score'       => 'decimal:2',
-        'weight'           => 'decimal:2',
-        'is_delete'        => 'boolean',
+        'value' => 'decimal:2',
+        'is_delete' => 'boolean',
     ];
 
     /**
@@ -35,13 +35,8 @@ class ExamSubject extends Model
         });
     }
 
-    public function campaign(): BelongsTo
+    public function examSubject(): BelongsTo
     {
-        return $this->belongsTo(SelectCampaing::class, 'campaign_id');
-    }
-
-    public function rules(): HasMany
-    {
-        return $this->hasMany(Rule::class, 'exam_subject_id');
+        return $this->belongsTo(ExamSubject::class, 'exam_subject_id');
     }
 }

@@ -21,6 +21,7 @@ return new class extends Migration
                 ->constrained('exam_subjects')
                 ->onDelete('cascade');
             $table->decimal('pass_score', 6, 2);
+            $table->boolean('must_pass_every_subject')->default(false);
             $table->timestamps();
 
             // One threshold per campaign+subject combo (subject_id=null = overall)
