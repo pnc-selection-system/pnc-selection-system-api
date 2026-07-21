@@ -52,7 +52,7 @@ class ScoringServices
                 wrongCount:      (int) ($entry['wrong_count'] ?? 0),
                 unansweredCount: (int) ($entry['unanswered_count'] ?? 0),
                 maxScore:        (float) $subject->max_score,
-                deductionRules:  $subject->deduction_rules ?? []
+                deductionRules:  []
             );
 
             $subjectThreshold = $thresholds->get($subjectId);

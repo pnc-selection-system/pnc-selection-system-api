@@ -16,3 +16,4 @@ require __DIR__.'/Commune.php';
 require __DIR__.'/Candidate.php';
 require __DIR__.'/NgoPartner.php';
 require __DIR__.'/infoSession.php';
+require __DIR__.'/ExamSubject.php';

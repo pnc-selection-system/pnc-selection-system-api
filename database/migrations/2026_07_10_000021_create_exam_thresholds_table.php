@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Drop if leftover from a previous failed migration attempt
+        Schema::dropIfExists('exam_thresholds');
+
         Schema::create('exam_thresholds', function (Blueprint $table) {
             $table->id();
             $table->foreignId('campaign_id')

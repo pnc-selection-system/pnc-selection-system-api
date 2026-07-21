@@ -13,18 +13,12 @@ class ScoringEngine
     /**
      * Calculate a subject's final score after applying deduction rules.
      *
-     * Deduction rules supported (from ExamSubject.deduction_rules JSONB):
-     * - wrong_answer: per-wrong-answer penalty (e.g. -0.25)
-     * - unanswered: per-unanswered penalty (e.g. 0 or -0.5)
-     * - negative_marking: bool — if false, final score floors at 0
-     * - partial_credit: multiplier for partial correctness (0-1)
-     *
      * @param float $rawScore        The student's raw score (points earned)
      * @param int   $correctCount    Number of correctly answered questions
      * @param int   $wrongCount      Number of incorrectly answered questions
      * @param int   $unansweredCount Number of unanswered questions
      * @param float $maxScore        Maximum possible score for the subject
-     * @param array $deductionRules  Deduction rules from ExamSubject
+     * @param array $deductionRules  Deduction rules
      *
      * @return array{
      *     raw_score: float,
