@@ -19,11 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-<<<<<<< HEAD
     'allowed_origins' => ['http://localhost:5173', 'http://127.0.0.1:5173'],
-=======
-    'allowed_origins' => ['*'],
->>>>>>> 4f773a29f9f06f0ee19adec429b00e34e57959cb
 
     'allowed_origins_patterns' => [],
 
@@ -33,10 +29,6 @@ return [
 
     'max_age' => 0,
 
-<<<<<<< HEAD
     'supports_credentials' => true,
-=======
-    'supports_credentials' => false,
->>>>>>> 4f773a29f9f06f0ee19adec429b00e34e57959cb
 
 ];
