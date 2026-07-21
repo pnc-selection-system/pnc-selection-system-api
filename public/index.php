@@ -1,5 +1,17 @@
 <?php
 
+// Discard any PHP startup notices (e.g. "file created in system's temporary directory")
+// that were emitted before this script ran and would break JSON API responses.
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
+ob_start();
+
+// Also suppress any future runtime errors from being displayed
+ini_set('display_errors', '0');
+
+// Permanently fix by setting upload_tmp_dir in php.ini to a valid writable path
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 
