@@ -9,6 +9,7 @@ class ImportFile extends Model
 {
     protected $fillable = [
         'campaign_id',
+        'province_id',
         'original_filename',
         'stored_path',
         'file_type',
@@ -31,6 +32,11 @@ class ImportFile extends Model
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(SelectCampaing::class, 'campaign_id');
+    }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class);
     }
 
     public function importer(): BelongsTo

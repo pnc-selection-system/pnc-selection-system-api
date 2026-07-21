@@ -7,15 +7,16 @@ use Illuminate\Database\Eloquent\Collection;
 
 class AssessmentFormRepository
 {
-    public function list(array $filters = []): Collection
+    public function list(array $filters = [])
     {
-        $query = AssessmentForm::query();
-
-        if (! empty($filters['campaign_id'])) {
-            $query->where('campaign_id', (int) $filters['campaign_id']);
-        }
-
-        return $query->latest()->get();
+        return AssessmentForm::select('id', 'campaign_id', 'name')
+            ->with('campaign:id,name,year,status')
+            ->when(
+                !empty($filters['campaign_id']),
+                fn($q) => $q->where('campaign_id', (int) $filters['campaign_id'])
+            )
+            ->latest('id')
+            ->paginate($filters['per_page'] ?? 10);
     }
 
     public function create(array $data): AssessmentForm

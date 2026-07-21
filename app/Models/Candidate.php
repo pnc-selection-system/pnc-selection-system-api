@@ -12,33 +12,20 @@ class Candidate extends Model
     protected $fillable = [
         'campaign_id',
         'province_id',
-        'school_id',
+        'school_name',
         'ngo_id',
         'first_name',
         'last_name',
+        'first_name_kh',
+        'last_name_kh',
         'gender',
         'dob',
         'phone',
-        'email',
-        'national',
-        'photo',
-        'address',
-        'household_size',
-        'father_name',
-        'mother_name',
-        'guardian_name',
-        'family_income',
-        'housing',
-        'graduation_year',
-        'current_grade',
         'status',
     ];
 
     protected $casts = [
         'dob' => 'date',
-        'household_size' => 'integer',
-        'family_income' => 'decimal:2',
-        'graduation_year' => 'integer',
     ];
 
     public function campaign(): BelongsTo
@@ -49,11 +36,6 @@ class Candidate extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
-    }
-
-    public function school(): BelongsTo
-    {
-        return $this->belongsTo(School::class);
     }
 
     public function referringNgo(): BelongsTo

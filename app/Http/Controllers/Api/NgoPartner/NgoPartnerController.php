@@ -16,7 +16,7 @@ class NgoPartnerController extends Controller
 
     public function index(): JsonResponse
     {
-        $ngoPartners = $this->ngoPartnerService->list(request()->all());
+        $ngoPartners = $this->ngoPartnerService->list(request()->only(['search', 'type', 'status', 'per_page']));
 
         return ApiResponse::success($ngoPartners, 'NGO partners retrieved successfully');
     }

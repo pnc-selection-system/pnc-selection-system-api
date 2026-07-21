@@ -23,12 +23,10 @@ class StoreHomeInvestigationRequest extends FormRequest
      */
     public function rules(): array
     {
-        $isAdmin = $this->user() && $this->user()->role_id === 1; // Admin role_id is 1
-
         return [
             'candidate_id' => ['required', 'exists:candidates,id'],
             'campaign_id' => ['nullable', 'exists:selection_campaigns,id'],
-            'investigator_id' => $isAdmin ? ['nullable', 'exists:users,id'] : ['required', 'exists:users,id'],
+            'investigator_id' => ['nullable', 'exists:users,id'],
             'visit_date' => ['required', 'date'],
             'location' => ['required', 'string', 'max:255'],
             'people_met' => ['nullable', 'string'],

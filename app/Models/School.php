@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class School extends Model
 {
     protected $fillable = [
-        'province_id',
+
+        'village_id',
         'name',
-        'address',
     ];
 
     public function province(): BelongsTo
@@ -20,6 +20,20 @@ class School extends Model
 
     public function candidates()
     {
+<<<<<<< HEAD
         return $this->hasMany(Candidate::class);
+=======
+        return $this->hasMany(Cadidate::class);
+    public function village()
+    {
+        return $this->belongsTo(Village::class);
     }
+
+    public function infoSessions()
+    {
+        return $this->hasMany(InfoSession::class);
+>>>>>>> 4f773a29f9f06f0ee19adec429b00e34e57959cb
+    }
+}
+
 }

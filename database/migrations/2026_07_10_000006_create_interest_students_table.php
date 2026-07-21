@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('interested_students', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('info_session_id')->constrained('information_sessions')->onDelete('cascade');
+            $table->foreignId('info_session_id')->constrained('info_sessions')->onDelete('cascade');
             $table->string('full_name', 150);
             $table->string('gender', 20);
             $table->string('phone', 30)->nullable();

@@ -9,23 +9,24 @@ use Illuminate\Database\Eloquent\Collection;
 
 class NgoPartnerRepository
 {
-    public function list(array $filters = []): Collection
+    public function list(array $filters = [])
     {
-        $query = NgoPartner::query();
-
-        if (! empty($filters['search'])) {
-            $query->where('name', 'like', '%'.$filters['search'].'%');
-        }
-
-        if (! empty($filters['type'])) {
-            $query->where('type', $filters['type']);
-        }
-
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        return $query->latest()->get();
+        return NgoPartner::select('id', 'name', 'type', 'address', 'phone', 'email', 'active', 'status')
+            ->with('contactPersons:id,ngo_partner_id,full_name,phone,email')
+            ->when(
+                !empty($filters['search']),
+                fn($q) => $q->where('name', 'like', '%'.$filters['search'].'%')
+            )
+            ->when(
+                !empty($filters['type']),
+                fn($q) => $q->where('type', $filters['type'])
+            )
+            ->when(
+                !empty($filters['status']),
+                fn($q) => $q->where('status', $filters['status'])
+            )
+            ->latest('id')
+            ->paginate($filters['per_page'] ?? 10);
     }
 
     public function create(array $data): NgoPartner
@@ -58,8 +59,7 @@ class NgoPartnerRepository
             $query->where(function ($q) use ($filters) {
                 $q->where('first_name', 'like', '%'.$filters['search'].'%')
                   ->orWhere('last_name', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('phone', 'like', '%'.$filters['search'].'%')
-                  ->orWhere('email', 'like', '%'.$filters['search'].'%');
+                  ->orWhere('phone', 'like', '%'.$filters['search'].'%');
             });
         }
 
@@ -75,7 +75,7 @@ class NgoPartnerRepository
             $query->where('gender', $filters['gender']);
         }
 
-        return $query->with(['campaign', 'province', 'school'])->latest()->get();
+        return $query->with(['campaign', 'province'])->latest()->get();
     }
 
     public function listContactPersons(int $ngoPartnerId, array $filters = []): Collection

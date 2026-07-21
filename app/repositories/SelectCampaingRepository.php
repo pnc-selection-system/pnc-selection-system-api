@@ -7,19 +7,19 @@ use Illuminate\Database\Eloquent\Collection;
 
 class SelectCampaingRepository
 {
-    public function list(array $filters = []): Collection
+    public function list(array $filters = [])
     {
-        $query = SelectCampaing::query();
-
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        if (!empty($filters['year'])) {
-            $query->where('year', (int) $filters['year']);
-        }
-
-        return $query->latest()->get();
+        return SelectCampaing::select('id', 'name', 'year', 'condidate_total', 'start_date', 'end_date', 'status')
+            ->when(
+                !empty($filters['status']),
+                fn($q) => $q->where('status', $filters['status'])
+            )
+            ->when(
+                !empty($filters['year']),
+                fn($q) => $q->where('year', (int) $filters['year'])
+            )
+            ->latest('id')
+            ->paginate($filters['per_page'] ?? 10);
     }
 
     public function create(array $data): SelectCampaing
