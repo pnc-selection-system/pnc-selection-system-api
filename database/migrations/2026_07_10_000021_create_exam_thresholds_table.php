@@ -20,7 +20,8 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('exam_subjects')
                 ->onDelete('cascade');
-            $table->decimal('pass_score', 6, 2);
+            $table->decimal('overall_pass_mark', 6, 2)->nullable();
+            $table->decimal('per_subject_min', 6, 2)->nullable();
             $table->boolean('must_pass_every_subject')->default(false);
             $table->timestamps();
 

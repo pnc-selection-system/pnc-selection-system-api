@@ -30,7 +30,7 @@ class ExamThresholdController extends Controller
     public function storeOverall(StoreExamThresholdRequest $request, int $campaignId): JsonResponse
     {
         $data = $request->validated();
-        $errors = $this->examThresholdService->validateThresholdData($data);
+        $errors = $this->examThresholdService->validateThresholdData($data, null);
 
         if (!empty($errors)) {
             return ApiResponse::validationError($errors);

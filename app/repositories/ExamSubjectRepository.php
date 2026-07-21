@@ -79,7 +79,6 @@ class ExamSubjectRepository
      */
     private function syncRules(ExamSubject $examSubject, array $rules): void
     {
-        $existingRuleIds = [];
         $requestRuleIds = [];
 
         foreach ($rules as $rule) {
@@ -97,10 +96,11 @@ class ExamSubjectRepository
 
                 if ($existingRule) {
                     $existingRule->update($rule);
-                    $existingRuleIds[] = $existingRule->id;
                 }
             } else {
-                $examSubject->rules()->create($rule);
+                $newRule = $examSubject->rules()->create($rule);
+                // Track the newly created rule's ID so it won't be soft-deleted below
+                $requestRuleIds[] = $newRule->id;
             }
         }
 

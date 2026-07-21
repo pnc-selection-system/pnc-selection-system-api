@@ -70,13 +70,29 @@ class ExamThresholdService
     {
         $errors = [];
 
-        // Validate pass_score
-        if (!isset($data['pass_score']) || $data['pass_score'] === null) {
-            $errors['pass_score'] = 'Pass score is required';
-        } elseif (!is_numeric($data['pass_score'])) {
-            $errors['pass_score'] = 'Pass score must be a number';
-        } elseif ($data['pass_score'] < 0 || $data['pass_score'] > 100) {
-            $errors['pass_score'] = 'Pass score must be between 0 and 100';
+        // Validate overall_pass_mark
+        if (!isset($data['overall_pass_mark']) || $data['overall_pass_mark'] === null) {
+            $errors['overall_pass_mark'] = 'Overall pass mark is required';
+        } elseif (!is_numeric($data['overall_pass_mark'])) {
+            $errors['overall_pass_mark'] = 'Overall pass mark must be a number';
+        } elseif ($data['overall_pass_mark'] < 0 || $data['overall_pass_mark'] > 100) {
+            $errors['overall_pass_mark'] = 'Overall pass mark must be between 0 and 100';
+        }
+
+        // Validate per_subject_min
+        if (!isset($data['per_subject_min']) || $data['per_subject_min'] === null) {
+            $errors['per_subject_min'] = 'Per subject minimum is required';
+        } elseif (!is_numeric($data['per_subject_min'])) {
+            $errors['per_subject_min'] = 'Per subject minimum must be a number';
+        } elseif ($data['per_subject_min'] < 0 || $data['per_subject_min'] > 100) {
+            $errors['per_subject_min'] = 'Per subject minimum must be between 0 and 100';
+        }
+
+        // Validate that per_subject_min is not greater than overall_pass_mark
+        if (isset($data['overall_pass_mark']) && isset($data['per_subject_min'])) {
+            if ($data['per_subject_min'] > $data['overall_pass_mark']) {
+                $errors['per_subject_min'] = 'Per subject minimum cannot be greater than overall pass mark';
+            }
         }
 
         // Validate must_pass_every_subject (only for overall threshold)
