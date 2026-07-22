@@ -31,7 +31,7 @@ class InfoSessionRepository
             ->when($filters['province'] ?? null, fn($q, $v) => $q->whereHas('province', fn($q) => $q->where('name', $v)))
             ->when($filters['start_date'] ?? null, fn($q, $v) => $q->whereDate('info_sessions.session_date', '>=', $v))
             ->when($filters['end_date'] ?? null, fn($q, $v) => $q->whereDate('info_sessions.session_date', '<=', $v))
-            ->when($filters['campaign_year'] ?? null, fn($q, $v) => $q->whereYear('info_sessions.session_date', $v))
+            ->when($filters['campaign_year'] ?? null, fn($q, $v) => $q->whereHas('campaign', fn($q) => $q->where('year', $v)))
             ->orderBy('info_sessions.id', 'desc')
             ->paginate($filters['per_page'] ?? 10);
     }
