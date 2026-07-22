@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('exam_thresholds', function (Blueprint $table) {
-            $table->decimal('overall_pass_mark', 6, 2)->nullable()->after('subject_id');
-            $table->decimal('per_subject_min', 6, 2)->nullable()->after('overall_pass_mark');
+            if (!Schema::hasColumn('exam_thresholds', 'overall_pass_mark')) {
+                $table->decimal('overall_pass_mark', 6, 2)->nullable()->after('subject_id');
+            }
+            if (!Schema::hasColumn('exam_thresholds', 'per_subject_min')) {
+                $table->decimal('per_subject_min', 6, 2)->nullable()->after('overall_pass_mark');
+            }
         });
     }
 

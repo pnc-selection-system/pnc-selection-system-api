@@ -18,3 +18,4 @@ require __DIR__.'/NgoPartner.php';
 require __DIR__.'/infoSession.php';
 require __DIR__.'/ExamSubject.php';
 require __DIR__.'/ExamThreshold.php';
+require __DIR__.'/ExamResult.php';
