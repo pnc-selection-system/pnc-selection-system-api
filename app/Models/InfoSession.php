@@ -9,6 +9,7 @@ class InfoSession extends Model
 {
     protected $fillable = [
         'campaign_id',
+        'created_by',
         'province_id',
         'district_id',
         'commune_id',
@@ -21,11 +22,46 @@ class InfoSession extends Model
         'partner_type',
         'partner_name',
         'host_by',
+        'venue',
+        'location',
+        'department',
+        'generation',
     ];
+
+    protected $appends = [
+        'school_name',
+        'host_name',
+    ];
+
+    public function getSchoolNameAttribute(): ?string
+    {
+        return $this->school;
+    }
+
+    public function getHostNameAttribute(): ?string
+    {
+        return $this->host_by;
+    }
 
     protected $casts = [
         'session_date' => 'date',
     ];
+
+    /**
+     * Override toArray to replace province/district/commune/village objects with just their name strings.
+     */
+    public function toArray(): array
+    {
+        $data = parent::toArray();
+
+        foreach (['province', 'district', 'commune', 'village'] as $rel) {
+            if ($this->relationLoaded($rel)) {
+                $data[$rel] = $this->getRelation($rel)->name ?? null;
+            }
+        }
+
+        return $data;
+    }
 
     public function campaign(): BelongsTo
     {
