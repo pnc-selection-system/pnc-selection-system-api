@@ -49,4 +49,29 @@ class AssessmentFormController extends Controller
 
         return ApiResponse::ok('Assessment form deleted successfully');
     }
+
+    /**
+     * Get the questions (fields) from an assessment form's schema.
+     * GET /assessment-forms/{assessmentForm}/questions
+     */
+    public function questions(AssessmentForm $assessmentForm): JsonResponse
+    {
+        $questions = collect($assessmentForm->fields())->map(function ($field) {
+            return [
+                'id' => $field['key'] ?? null,
+                'key' => $field['key'] ?? '',
+                'label' => $field['label'] ?? '',
+                'type' => $field['type'] ?? 'text',
+                'weight' => $field['weight'] ?? 1,
+                'order' => $field['order'] ?? 0,
+                'options' => $field['options'] ?? null,
+                'point_map' => $field['point_map'] ?? null,
+                'rules' => $field['rules'] ?? ['required' => true],
+            ];
+        })->filter(function ($q) {
+            return $q['key'] !== null && $q['key'] !== '';
+        })->values();
+
+        return ApiResponse::success($questions, 'Questions retrieved successfully');
+    }
 }
