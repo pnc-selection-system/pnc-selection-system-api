@@ -3,6 +3,7 @@
 namespace Services;
 
 use App\Models\NgoContactPersion;
+use App\Models\CommunicationLog;
 use App\Models\NgoPartner;
 use Illuminate\Database\Eloquent\Collection;
 use Repositories\NgoPartnerRepository;
@@ -64,5 +65,15 @@ class NgoPartnerServices
     public function deleteContactPerson(NgoContactPersion $contactPerson): void
     {
         $this->ngoPartnerRepository->deleteContactPerson($contactPerson);
+    }
+
+    public function listCommunicationLogs(int $ngoPartnerId): Collection
+    {
+        return $this->ngoPartnerRepository->listCommunicationLogs($ngoPartnerId);
+    }
+
+    public function createCommunicationLog(int $ngoPartnerId, array $data): CommunicationLog
+    {
+        return $this->ngoPartnerRepository->createCommunicationLog($ngoPartnerId, $data);
     }
 }

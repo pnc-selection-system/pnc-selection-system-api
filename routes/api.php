@@ -19,3 +19,5 @@ require __DIR__.'/infoSession.php';
 require __DIR__.'/ExamSubject.php';
 require __DIR__.'/ExamThreshold.php';
 require __DIR__.'/ExamResult.php';
+require __DIR__.'/AssessmentForm.php';
+require __DIR__.'/AssessmentResponse.php';

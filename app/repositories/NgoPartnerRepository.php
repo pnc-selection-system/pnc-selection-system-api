@@ -3,6 +3,7 @@
 namespace Repositories;
 
 use App\Models\Cadidate;
+use App\Models\CommunicationLog;
 use App\Models\NgoContactPersion;
 use App\Models\NgoPartner;
 use Illuminate\Database\Eloquent\Collection;
@@ -116,5 +117,19 @@ class NgoPartnerRepository
     public function deleteContactPerson(NgoContactPersion $contactPerson): void
     {
         $contactPerson->delete();
+    }
+
+    public function listCommunicationLogs(int $ngoPartnerId): Collection
+    {
+        return CommunicationLog::where('ngo_partner_id', $ngoPartnerId)
+            ->latest()
+            ->get();
+    }
+
+    public function createCommunicationLog(int $ngoPartnerId, array $data): CommunicationLog
+    {
+        $data['ngo_partner_id'] = $ngoPartnerId;
+
+        return CommunicationLog::create($data);
     }
 }
