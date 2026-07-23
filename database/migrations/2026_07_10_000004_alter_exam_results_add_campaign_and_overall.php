@@ -6,37 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * ⚠️ This migration has been moved to 2026_07_10_000027_alter_exam_results_add_campaign_and_overall.php
+     * to fix ordering issues (needs to run AFTER candidates and exam_results tables are created).
+     * 
+     * DO NOT add logic here — at this timestamp (000004), the referenced tables 
+     * (candidates at 000007, exam_results at 000011) don't exist yet.
+     */
     public function up(): void
     {
-        // Add campaign_id to exam_results for campaign-level querying
-        Schema::table('exam_results', function (Blueprint $table) {
-            $table->foreignId('campaign_id')
-                ->after('id')
-                ->constrained('selection_campaigns')
-                ->onDelete('cascade');
-        });
-
-        // Overall scores per candidate per campaign
-        Schema::create('exam_overall_results', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('candidate_id')->constrained('candidates')->onDelete('cascade');
-            $table->foreignId('campaign_id')->constrained('selection_campaigns')->onDelete('cascade');
-            $table->decimal('total_weighted_score', 8, 2)->default(0);
-            $table->decimal('overall_percentage', 6, 2)->default(0);
-            $table->boolean('passed')->default(false);
-            $table->timestamps();
-
-            $table->unique(['candidate_id', 'campaign_id']);
-        });
+        // No-op — handled by 2026_07_10_000027_alter_exam_results_add_campaign_and_overall.php
     }
 
     public function down(): void
     {
         Schema::dropIfExists('exam_overall_results');
-
-        Schema::table('exam_results', function (Blueprint $table) {
-            $table->dropForeign(['campaign_id']);
-            $table->dropColumn('campaign_id');
-        });
     }
 };

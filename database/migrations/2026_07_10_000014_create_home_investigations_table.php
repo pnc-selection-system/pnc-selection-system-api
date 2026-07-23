@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('home_investigations')) {
+            return;
+        }
+
         Schema::create('home_investigations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('candidate_id')->constrained()->onDelete('cascade');

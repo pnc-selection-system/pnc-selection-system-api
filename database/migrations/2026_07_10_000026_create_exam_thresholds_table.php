@@ -8,35 +8,29 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('result_snapshots')) {
+        if (!Schema::hasTable('exam_subjects') || !Schema::hasTable('selection_campaigns') || Schema::hasTable('exam_thresholds')) {
             return;
         }
 
-        Schema::create('result_snapshots', function (Blueprint $table) {
+        Schema::create('exam_thresholds', function (Blueprint $table) {
             $table->id();
             $table->foreignId('campaign_id')
                 ->constrained('selection_campaigns')
-                ->onDelete('cascade');
-            $table->foreignId('candidate_id')
-                ->constrained('candidates')
                 ->onDelete('cascade');
             $table->foreignId('subject_id')
                 ->nullable()
                 ->constrained('exam_subjects')
                 ->onDelete('cascade');
-            $table->json('old_data');
-            $table->json('new_data');
-            $table->integer('version');
-            $table->text('reason');
-            $table->foreignId('recalculated_by')
-                ->constrained('users')
-                ->onDelete('cascade');
+            $table->decimal('pass_score', 6, 2);
             $table->timestamps();
+
+            // One threshold per campaign+subject combo (subject_id=null = overall)
+            $table->unique(['campaign_id', 'subject_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('result_snapshots');
+        Schema::dropIfExists('exam_thresholds');
     }
 };

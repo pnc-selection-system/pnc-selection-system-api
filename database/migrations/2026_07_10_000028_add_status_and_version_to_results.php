@@ -6,13 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * This migration has been moved to 2026_07_10_000028_add_status_and_version_to_results.php
-     * to fix ordering (needs to run AFTER 2026_07_10_000011_create_exam_results_table.php and
-     * 2026_07_10_000027_alter_exam_results_add_campaign_and_overall.php).
-     * 
-     * This stub is kept as a no-op to avoid breaking existing installations.
-     */
     public function up(): void
     {
         if (Schema::hasTable('exam_results') && !Schema::hasColumn('exam_results', 'status')) {

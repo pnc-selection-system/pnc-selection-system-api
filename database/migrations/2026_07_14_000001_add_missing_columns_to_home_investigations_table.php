@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::table('home_investigations', function (Blueprint $table) {
             // Add campaign_id column
             if (!Schema::hasColumn('home_investigations', 'campaign_id')) {
-                $table->foreignId('campaign_id')->nullable()->constrained()->onDelete('set null');
+                $table->foreignId('campaign_id')->nullable()->constrained('selection_campaigns')->onDelete('set null');
             }
             
             // Add people_met column
