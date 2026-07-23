@@ -4,7 +4,7 @@ use App\Http\Controllers\Api\Candidate\CandidateController;
 use App\Http\Controllers\Api\Candidate\ImportCandidateController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware('jwt.auth')->group(function () {
     // Candidate CRUD
     Route::apiResource('candidates', CandidateController::class);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Province;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\Province;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Services\ProvinceServices;
@@ -19,5 +20,36 @@ class ProvinceController extends Controller
         $provinces = $this->provinceService->list($request->all());
 
         return ApiResponse::success($provinces, 'Provinces retrieved successfully');
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $request->validate(['name' => 'required|string|max:100']);
+        $province = $this->provinceService->create($request->only('name'));
+
+        return ApiResponse::created($province, 'Province created successfully');
+    }
+
+    public function show(Province $province): JsonResponse
+    {
+        return ApiResponse::success(
+            $this->provinceService->find($province),
+            'Province retrieved successfully'
+        );
+    }
+
+    public function update(Request $request, Province $province): JsonResponse
+    {
+        $request->validate(['name' => 'required|string|max:100']);
+        $province = $this->provinceService->update($province, $request->only('name'));
+
+        return ApiResponse::success($province, 'Province updated successfully');
+    }
+
+    public function destroy(Province $province): JsonResponse
+    {
+        $this->provinceService->delete($province);
+
+        return ApiResponse::ok('Province deleted successfully');
     }
 }

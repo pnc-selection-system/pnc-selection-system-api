@@ -98,4 +98,11 @@ class InfoSessionRepository
 
         return $session->refresh()->load('hosts');
     }
+
+    public function delete(int $id): void
+    {
+        $session = InfoSession::findOrFail($id);
+        $session->hosts()->delete();
+        $session->delete();
+    }
 }

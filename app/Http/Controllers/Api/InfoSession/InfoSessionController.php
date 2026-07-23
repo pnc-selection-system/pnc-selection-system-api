@@ -38,4 +38,10 @@ class InfoSessionController extends Controller
         $session = $this->service->update($id, $request->validated());
         return ApiResponse::success($session, 'Information Session updated successfully.');
     }
+
+    public function destroy(int $id)
+    {
+        $this->service->delete($id);
+        return ApiResponse::ok('Information Session deleted successfully.');
+    }
 }

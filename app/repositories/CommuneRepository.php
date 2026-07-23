@@ -3,11 +3,10 @@
 namespace Repositories;
 
 use App\Models\Commune;
-use Illuminate\Database\Eloquent\Collection;
 
 class CommuneRepository
 {
-    public function list(array $filters = []): Collection
+    public function list(array $filters = [])
     {
         return Commune::select('id', 'district_id', 'name')
             ->with('district:id,province_id,name')
@@ -17,5 +16,27 @@ class CommuneRepository
             )
             ->latest('id')
             ->get();
+    }
+
+    public function create(array $data): Commune
+    {
+        return Commune::create($data);
+    }
+
+    public function find(Commune $commune): Commune
+    {
+        return $commune->load('district:id,province_id,name');
+    }
+
+    public function update(Commune $commune, array $data): Commune
+    {
+        $commune->update($data);
+
+        return $commune->fresh()->load('district:id,province_id,name');
+    }
+
+    public function delete(Commune $commune): void
+    {
+        $commune->delete();
     }
 }
