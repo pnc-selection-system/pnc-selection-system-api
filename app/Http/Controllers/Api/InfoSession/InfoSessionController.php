@@ -17,7 +17,10 @@ class InfoSessionController extends Controller
 
     public function index(Request $request)
     {
-        $sessions = $this->service->list($request->only(['campaign_id', 'village_id', 'per_page', 'partner_type', 'province']));
+        $sessions = $this->service->list($request->only([
+            'campaign_id', 'village_id', 'per_page', 'partner_type', 'province',
+            'start_date', 'end_date', 'campaign_year',
+        ]));
         return ApiResponse::success($sessions, 'Info sessions retrieved successfully.');
     }
 
@@ -37,5 +40,11 @@ class InfoSessionController extends Controller
     {
         $session = $this->service->update($id, $request->validated());
         return ApiResponse::success($session, 'Information Session updated successfully.');
+    }
+
+    public function destroy(int $id)
+    {
+        $this->service->delete($id);
+        return ApiResponse::success(null, 'Information Session deleted successfully.');
     }
 }

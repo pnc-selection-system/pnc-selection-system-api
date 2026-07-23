@@ -36,4 +36,11 @@ class InfoSessionServices
 
         });
     }
+
+    public function delete(int $id)
+    {
+        return DB::transaction(function () use ($id) {
+            return $this->repository->delete($id);
+        });
+    }
 }
