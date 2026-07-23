@@ -12,6 +12,7 @@ class ExamResult extends Model
     protected $fillable = [
         'candidate_id',
         'subject_id',
+        'campaign_id',
         'raw_correct',
         'raw_wrong',
         'raw_score',
@@ -19,6 +20,8 @@ class ExamResult extends Model
         'final_score',
         'rank',
         'passed',
+        'status',
+        'version',
     ];
 
     protected $casts = [
@@ -29,7 +32,13 @@ class ExamResult extends Model
         'final_score' => 'decimal:2',
         'rank' => 'integer',
         'passed' => 'boolean',
+        'version' => 'integer',
     ];
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(SelectCampaing::class, 'campaign_id');
+    }
 
     public function candidate(): BelongsTo
     {

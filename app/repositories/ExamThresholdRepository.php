@@ -52,13 +52,11 @@ class ExamThresholdRepository
         $threshold = $this->getOverallThreshold($campaignId);
 
         if ($threshold) {
-            $data['pass_score'] = $data['overall_pass_mark'] ?? $threshold->pass_score;
             $threshold->update($data);
             $threshold->refresh();
         } else {
             $data['campaign_id'] = $campaignId;
             $data['subject_id'] = null;
-            $data['pass_score'] = $data['overall_pass_mark'];
             $threshold = ExamThreshold::create($data);
         }
 
@@ -73,13 +71,11 @@ class ExamThresholdRepository
         $threshold = $this->getSubjectThreshold($campaignId, $subjectId);
 
         if ($threshold) {
-            $data['pass_score'] = $data['per_subject_min'] ?? $threshold->pass_score;
             $threshold->update($data);
             $threshold->refresh();
         } else {
             $data['campaign_id'] = $campaignId;
             $data['subject_id'] = $subjectId;
-            $data['pass_score'] = $data['per_subject_min'];
             $threshold = ExamThreshold::create($data);
         }
 

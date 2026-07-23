@@ -16,14 +16,12 @@ class ExamThreshold extends Model
         'overall_pass_mark',
         'per_subject_min',
         'must_pass_every_subject',
-        'pass_score',
     ];
 
     protected $casts = [
         'overall_pass_mark' => 'decimal:2',
         'per_subject_min' => 'decimal:2',
         'must_pass_every_subject' => 'boolean',
-        'pass_score' => 'decimal:2',
     ];
 
     /**

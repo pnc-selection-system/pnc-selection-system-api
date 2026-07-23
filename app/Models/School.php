@@ -21,10 +21,7 @@ class School extends Model
     public function candidates()
     {
         return $this->hasMany(Cadidate::class);
-    public function village()
-    {
-        return $this->belongsTo(Village::class);
-    }
+
 
     public function infoSessions()
     {

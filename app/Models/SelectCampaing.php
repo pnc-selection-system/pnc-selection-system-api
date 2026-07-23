@@ -32,4 +32,19 @@ class SelectCampaing extends Model
     {
         return $this->belongsToMany(Province::class, 'campaign_province', 'selection_campaign_id', 'province_id');
     }
+
+    public function candidates()
+    {
+        return $this->hasMany(Cadidate::class, 'campaign_id');
+    }
+
+    public function examResults()
+    {
+        return $this->hasMany(ExamResult::class, 'campaign_id');
+    }
+
+    public function examOverallResults()
+    {
+        return $this->hasMany(ExamOverallResult::class, 'campaign_id');
+    }
 }

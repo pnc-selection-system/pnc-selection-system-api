@@ -3,9 +3,13 @@
 namespace Services;
 
 use App\Models\Cadidate;
+use App\Models\ExamOverallResult;
 use App\Models\ExamResult;
-use App\Models\ImportFile;
 use App\Models\ExamSubject;
+use App\Models\ExamThreshold;
+use App\Models\ImportFile;
+use App\Models\Rule;
+use App\Services\ScoringEngine;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,12 +22,13 @@ class ExamResultImportService
      * Known database column names mapped to common CSV header variations for exam results.
      */
     private const HEADER_ALIASES = [
-        'student_id' => ['student id', 'student_id', 'studentid', 'id', 'student number', 'student no'],
-        'candidate_id' => ['candidate id', 'candidate_id', 'candidate'],
-        'raw_score' => ['raw score', 'raw_score', 'score', 'points', 'raw', 'total'],
-        'raw_correct' => ['raw correct', 'raw_correct', 'correct', 'correct answers', 'right'],
-        'raw_wrong' => ['raw wrong', 'raw_wrong', 'wrong', 'incorrect', 'wrong answers'],
-        'deduction' => ['deduction', 'deduct', 'penalty', 'minus'],
+        'student_id'    => ['student id', 'student_id', 'studentid', 'id', 'student number', 'student no'],
+        'candidate_id'  => ['candidate id', 'candidate_id', 'candidate'],
+        'raw_score'     => ['raw score', 'raw_score', 'score', 'points', 'raw', 'total'],
+        'raw_correct'   => ['raw correct', 'raw_correct', 'correct', 'correct answers', 'right', 'correct count'],
+        'raw_wrong'     => ['raw wrong', 'raw_wrong', 'wrong', 'incorrect', 'wrong answers', 'wrong count'],
+        'raw_unanswered'=> ['unanswered', 'blank', 'unanswered count', 'no answer', 'skipped'],
+        'deduction'     => ['deduction', 'deduct', 'penalty', 'minus'],
     ];
 
     /**
@@ -37,12 +42,10 @@ class ExamResultImportService
         int $subjectId,
         int $userId
     ): array {
-        // Store the file
         $storedPath = $file->store('imports/exam-results');
         $extension = strtolower($file->getClientOriginalExtension());
         $originalName = $file->getClientOriginalName();
 
-        // Parse the file
         $rows = $this->readFile(Storage::disk('local')->path($storedPath), $extension);
         $rows = array_values($rows);
 
@@ -50,11 +53,9 @@ class ExamResultImportService
             throw new Exception('The file is empty or has no data rows.');
         }
 
-        // First row is the header
         $headers = $rows[0];
         $dataRows = array_slice($rows, 1);
 
-        // Detect columns and auto-mapping
         $detectedColumns = [];
         $autoMapping = [];
 
@@ -67,16 +68,13 @@ class ExamResultImportService
             $autoMapping[$index] = $this->autoMapColumn($cleanHeader);
         }
 
-        // Generate sample rows (first 10)
         $sampleRows = array_slice($dataRows, 0, 10);
 
-        // Build index-based column mapping [colIndex => dbField]
         $indexToField = [];
         foreach ($detectedColumns as $index => $colName) {
             $indexToField[$index] = $autoMapping[$index] ?? null;
         }
 
-        // Build readable auto_mapping (column_name => db_field)
         $readableMapping = [];
         foreach ($autoMapping as $index => $dbField) {
             if ($dbField !== null && isset($detectedColumns[$index])) {
@@ -84,7 +82,22 @@ class ExamResultImportService
             }
         }
 
-        // Transform sample rows into structured preview objects
+        // Load subject rules for preview/scoring info
+        $subject = ExamSubject::with('rules')->find($subjectId);
+        $subjectRules = $subject ? $subject->rules->toArray() : [];
+
+        // Build rule summary for frontend display
+        $ruleSummary = [];
+        foreach ($subjectRules as $rule) {
+            $ruleSummary[] = [
+                'name'  => $rule['name'],
+                'desc'  => $rule['desc'] ?? '',
+                'sign'  => $rule['sign'],
+                'value' => (float) $rule['value'],
+            ];
+        }
+
+        // Preview rows with validation
         $previewRows = [];
         $validCount = 0;
         $rowErrors = [];
@@ -102,13 +115,42 @@ class ExamResultImportService
 
             $rowNumber = $rowIndex + 2;
 
-            // Validation
-            if (!isset($rowData['student_id']) || empty($rowData['student_id'])) {
+            // Validate student_id
+            if (! isset($rowData['student_id']) || empty(trim((string) $rowData['student_id']))) {
                 $rowValidationErrors[] = 'Student ID is required';
+            } else {
+                $studentId = trim((string) $rowData['student_id']);
+                $candidate = Cadidate::where('student_id', $studentId)->first();
+                if (! $candidate) {
+                    $rowValidationErrors[] = "Student ID '{$studentId}' not found in candidate list";
+                } elseif ((int) $candidate->campaign_id !== $campaignId) {
+                    $rowValidationErrors[] = "Student ID '{$studentId}' does not belong to this campaign";
+                }
             }
 
-            if (!isset($rowData['raw_score']) || !is_numeric($rowData['raw_score'])) {
-                $rowValidationErrors[] = 'Raw score must be numeric';
+            // Either raw_score OR (raw_correct + raw_wrong) must be present
+            $hasRawScore = isset($rowData['raw_score']) && is_numeric($rowData['raw_score']);
+            $hasCorrect  = isset($rowData['raw_correct']) && is_numeric($rowData['raw_correct']);
+            $hasWrong    = isset($rowData['raw_wrong']) && is_numeric($rowData['raw_wrong']);
+
+            if (! $hasRawScore && ! ($hasCorrect)) {
+                $rowValidationErrors[] = 'Either Raw Score or Correct Count is required';
+            }
+
+            // Calculate preview score if we have enough data
+            $previewScore = null;
+            if ($hasCorrect) {
+                $correctCount = (int) $rowData['raw_correct'];
+                $wrongCount = $hasWrong ? (int) $rowData['raw_wrong'] : 0;
+                $calcResult = $this->calculateScoreFromRules($correctCount, $wrongCount, $subjectRules);
+                $previewScore = $calcResult['final_score'];
+            } elseif ($hasRawScore) {
+                // Use raw_score as final if deduction is not provided
+                $deduction = (isset($rowData['deduction']) && is_numeric($rowData['deduction']))
+                    ? (float) $rowData['deduction']
+                    : 0;
+                $finalSubjectScore = (float) $rowData['raw_score'] - $deduction;
+                $previewScore = max(0, $finalSubjectScore);
             }
 
             $isValid = empty($rowValidationErrors);
@@ -119,50 +161,220 @@ class ExamResultImportService
             }
 
             $previewRows[] = [
-                'row' => $rowNumber,
-                'student_id' => $rowData['student_id'] ?? '',
-                'candidate_id' => $rowData['candidate_id'] ?? '',
-                'raw_score' => $rowData['raw_score'] ?? '',
-                'raw_correct' => $rowData['raw_correct'] ?? null,
-                'raw_wrong' => $rowData['raw_wrong'] ?? null,
-                'deduction' => $rowData['deduction'] ?? null,
-                'valid' => $isValid,
-                'errors' => $rowValidationErrors,
+                'row'           => $rowNumber,
+                'student_id'    => $rowData['student_id'] ?? '',
+                'candidate_id'  => $rowData['candidate_id'] ?? '',
+                'raw_score'     => $rowData['raw_score'] ?? '',
+                'raw_correct'   => $rowData['raw_correct'] ?? null,
+                'raw_wrong'     => $rowData['raw_wrong'] ?? null,
+                'deduction'     => $rowData['deduction'] ?? null,
+                'preview_score' => $previewScore,
+                'valid'         => $isValid,
+                'errors'        => $rowValidationErrors,
             ];
         }
 
         // Create import file record
         $importFile = ImportFile::create([
-            'campaign_id' => $campaignId,
-            'province_id' => null, // Not needed for exam results
+            'campaign_id'       => $campaignId,
+            'province_id'       => null,
             'original_filename' => $originalName,
-            'stored_path' => $storedPath,
-            'file_type' => in_array($extension, ['xlsx', 'xls']) ? $extension : 'csv',
-            'file_size' => $file->getSize(),
-            'detected_columns' => $detectedColumns,
-            'sample_rows' => $sampleRows,
-            'row_count' => count($dataRows),
-            'status' => 'pending',
-            'imported_by' => $userId,
+            'stored_path'       => $storedPath,
+            'file_type'         => in_array($extension, ['xlsx', 'xls']) ? $extension : 'csv',
+            'file_size'         => $file->getSize(),
+            'detected_columns'  => $detectedColumns,
+            'sample_rows'       => $sampleRows,
+            'row_count'         => count($dataRows),
+            'status'            => 'pending',
+            'imported_by'       => $userId,
         ]);
 
         return [
-            'import_file_id' => $importFile->id,
-            'file_name' => $originalName,
-            'total_rows' => count($dataRows),
-            'valid_rows' => $validCount,
-            'preview' => $previewRows,
-            'errors' => $rowErrors,
-            'detected_columns' => $detectedColumns,
-            'auto_mapping' => $readableMapping,
+            'import_file_id'    => $importFile->id,
+            'file_name'         => $originalName,
+            'total_rows'        => count($dataRows),
+            'valid_rows'        => $validCount,
+            'preview'           => $previewRows,
+            'errors'            => $rowErrors,
+            'detected_columns'  => $detectedColumns,
+            'auto_mapping'      => $readableMapping,
+            'subject_rules'     => $ruleSummary,
         ];
     }
 
     /**
-     * Confirm and execute the import with user-provided column mapping.
+     * Validate the full import file with the given column mapping.
+     * Returns per-row validation results including score calculation preview.
      *
      * @param int   $importFileId
-     * @param array $columnMapping  e.g. [0 => 'candidate_id', 1 => 'raw_score', ...]
+     * @param array $columnMapping  e.g. [0 => 'student_id', 1 => 'raw_correct', ...]
+     * @param int   $campaignId
+     * @param int   $subjectId
+     *
+     * @return array{total_rows: int, valid_rows: int, issues: array, subject_rules: array}
+     */
+    public function validateImport(
+        int $importFileId,
+        array $columnMapping,
+        int $campaignId,
+        int $subjectId
+    ): array {
+        /** @var ImportFile|null $importFile */
+        $importFile = ImportFile::find($importFileId);
+
+        if (! $importFile) {
+            throw new Exception('Import file not found.');
+        }
+
+        $fullPath = Storage::disk('local')->path($importFile->stored_path);
+        if (! file_exists($fullPath)) {
+            throw new Exception('The uploaded file no longer exists on the server.');
+        }
+
+        $rows = $this->readFile($fullPath, $importFile->file_type);
+        $rows = array_values($rows);
+        $dataRows = array_slice($rows, 1);
+
+        // Load subject with rules
+        $subject = ExamSubject::with('rules')->find($subjectId);
+        $subjectRules = $subject ? $subject->rules->toArray() : [];
+        $maxScore = $subject ? (float) $subject->max_score : 100;
+
+        $ruleSummary = [];
+        foreach ($subjectRules as $rule) {
+            $ruleSummary[] = [
+                'name'  => $rule['name'],
+                'desc'  => $rule['desc'] ?? '',
+                'sign'  => $rule['sign'],
+                'value' => (float) $rule['value'],
+            ];
+        }
+
+        $issues = [];
+        $validCount = 0;
+        $processedCount = 0;
+
+        // Build reverse mapping: dbField => csvColIndex
+        $fieldToIndex = [];
+        foreach ($columnMapping as $csvColIndex => $dbField) {
+            $fieldToIndex[$dbField] = (int) $csvColIndex;
+        }
+
+        foreach ($dataRows as $rowIndex => $row) {
+            $rowNumber = $rowIndex + 2;
+            $rowIssues = [];
+            $errors = [];
+            $warnings = [];
+
+            // Extract student_id
+            $studentId = null;
+            if (isset($fieldToIndex['student_id']) && isset($row[$fieldToIndex['student_id']])) {
+                $studentId = trim((string) $row[$fieldToIndex['student_id']]);
+            }
+
+            if (empty($studentId)) {
+                $errors[] = [
+                    'row'     => $rowNumber,
+                    'column'  => 'Student ID',
+                    'message' => 'Student ID is required',
+                    'type'    => 'error',
+                ];
+            } else {
+                // Match against candidate list
+                $candidate = Cadidate::where('student_id', $studentId)->first();
+                if (! $candidate) {
+                    $errors[] = [
+                        'row'     => $rowNumber,
+                        'column'  => 'Student ID',
+                        'message' => "Student ID '{$studentId}' not found in candidate list",
+                        'type'    => 'error',
+                    ];
+                } elseif ((int) $candidate->campaign_id !== $campaignId) {
+                    $errors[] = [
+                        'row'     => $rowNumber,
+                        'column'  => 'Student ID',
+                        'message' => "Student ID '{$studentId}' does not belong to this campaign",
+                        'type'    => 'error',
+                    ];
+                } else {
+                    $warnings[] = [
+                        'row'     => $rowNumber,
+                        'column'  => 'Student ID',
+                        'message' => "Student ID '{$studentId}' matched candidate '{$candidate->first_name} {$candidate->last_name}'",
+                        'type'    => 'warning',
+                    ];
+                }
+            }
+
+            // Check for raw_score OR raw_correct
+            $hasRawScore  = isset($fieldToIndex['raw_score']) && isset($row[$fieldToIndex['raw_score']]) && is_numeric($row[$fieldToIndex['raw_score']]);
+            $hasCorrect   = isset($fieldToIndex['raw_correct']) && isset($row[$fieldToIndex['raw_correct']]) && is_numeric($row[$fieldToIndex['raw_correct']]);
+
+            if (! $hasRawScore && ! $hasCorrect) {
+                $errors[] = [
+                    'row'     => $rowNumber,
+                    'column'  => 'Score',
+                    'message' => 'Either Raw Score or Correct Count is required',
+                    'type'    => 'error',
+                ];
+            } elseif (empty($errors)) {
+                $processedCount++;
+
+                // Calculate score preview
+                if ($hasCorrect) {
+                    $correctCount = (int) $row[$fieldToIndex['raw_correct']];
+                    $wrongCount = (isset($fieldToIndex['raw_wrong']) && isset($row[$fieldToIndex['raw_wrong']]) && is_numeric($row[$fieldToIndex['raw_wrong']]))
+                        ? (int) $row[$fieldToIndex['raw_wrong']]
+                        : 0;
+
+                    $calcResult = $this->calculateScoreFromRules($correctCount, $wrongCount, $subjectRules);
+                    $finalScore = $calcResult['final_score'];
+
+                    $warnings[] = [
+                        'row'     => $rowNumber,
+                        'column'  => 'Score',
+                        'message' => "{$correctCount} correct × rules → score: {$calcResult['raw_score']}, "
+                                   . "{$wrongCount} wrong × rules → deduction: -{$calcResult['deduction']}, "
+                                   . "final: {$finalScore} / {$maxScore}",
+                        'type'    => 'warning',
+                    ];
+                } else {
+                    $rawScoreVal = (float) $row[$fieldToIndex['raw_score']];
+                    $deductionVal = (isset($fieldToIndex['deduction']) && isset($row[$fieldToIndex['deduction']]) && is_numeric($row[$fieldToIndex['deduction']]))
+                        ? (float) $row[$fieldToIndex['deduction']]
+                        : 0;
+                    $finalScore = max(0, $rawScoreVal - $deductionVal);
+
+                    $warnings[] = [
+                        'row'     => $rowNumber,
+                        'column'  => 'Score',
+                        'message' => "Raw score: {$rawScoreVal}, deduction: {$deductionVal}, final: {$finalScore} / {$maxScore}",
+                        'type'    => 'warning',
+                    ];
+                }
+            }
+
+            $issues = array_merge($issues, $errors, $warnings);
+
+            if (empty($errors)) {
+                $validCount++;
+            }
+        }
+
+        return [
+            'total_rows'    => count($dataRows),
+            'valid_rows'    => $validCount,
+            'issues'        => $issues,
+            'subject_rules' => $ruleSummary,
+        ];
+    }
+
+    /**
+     * Confirm and execute the import with user-provided column mapping,
+     * calculate scores using subject rules, and store results.
+     *
+     * @param int   $importFileId
+     * @param array $columnMapping  e.g. [0 => 'student_id', 1 => 'raw_correct', ...]
      * @param int   $campaignId
      * @param int   $subjectId
      *
@@ -177,7 +389,7 @@ class ExamResultImportService
         /** @var ImportFile|null $importFile */
         $importFile = ImportFile::find($importFileId);
 
-        if (!$importFile) {
+        if (! $importFile) {
             throw new Exception('Import file not found.');
         }
 
@@ -185,10 +397,8 @@ class ExamResultImportService
             throw new Exception('This file has already been imported or has errors.');
         }
 
-        // Read the stored file
         $fullPath = Storage::disk('local')->path($importFile->stored_path);
-
-        if (!file_exists($fullPath)) {
+        if (! file_exists($fullPath)) {
             throw new Exception('The uploaded file no longer exists on the server.');
         }
 
@@ -196,120 +406,144 @@ class ExamResultImportService
         $rows = array_values($rows);
         $dataRows = array_slice($rows, 1);
 
+        // Load subject with rules and threshold
+        $subject = ExamSubject::with('rules')->find($subjectId);
+        if (! $subject) {
+            throw new Exception('Subject not found.');
+        }
+        $subjectRules = $subject->rules->toArray();
+        $maxScore = (float) $subject->max_score;
+
+        // Load subject threshold for pass/fail determination
+        $threshold = ExamThreshold::where('campaign_id', $campaignId)
+            ->where('subject_id', $subjectId)
+            ->first();
+        $passScore = $threshold ? (float) $threshold->per_subject_min : null;
+
+        // Build reverse mapping: dbField => csvColIndex
+        $fieldToIndex = [];
+        foreach ($columnMapping as $csvColIndex => $dbField) {
+            $fieldToIndex[$dbField] = (int) $csvColIndex;
+        }
+
         $importedCount = 0;
         $errors = [];
+        $importedCandidateIds = []; // Track candidates for overall calculation
 
         DB::beginTransaction();
 
         try {
             foreach ($dataRows as $rowIndex => $row) {
                 $rowNumber = $rowIndex + 2;
-                $resultData = [
-                    'subject_id' => $subjectId,
-                ];
 
-                // Protected fields that cannot be set via CSV column mapping
-                $protectedFields = ['id', 'subject_id', 'student_id', 'candidate_id', 'created_at', 'updated_at'];
-
-                // Map columns using user's mapping (skip protected fields)
-                foreach ($columnMapping as $csvColIndex => $dbField) {
-                    $csvColIndex = (int) $csvColIndex;
-                    if (!isset($row[$csvColIndex])) {
-                        continue;
-                    }
-
-                    // Skip protected system fields
-                    if (in_array($dbField, $protectedFields, true)) {
-                        continue;
-                    }
-
-                    $value = $row[$csvColIndex];
-                    $resultData[$dbField] = $value;
-                }
-
-                // Get student_id from mapping
+                // Extract student_id
                 $studentId = null;
-                if (isset($columnMapping['student_id']) && isset($row[$columnMapping['student_id']])) {
-                    $studentId = $row[$columnMapping['student_id']];
-                } else {
-                    // Try to find by column index
-                    foreach ($columnMapping as $colIndex => $dbField) {
-                        if ($dbField === 'student_id' && isset($row[$colIndex])) {
-                            $studentId = $row[$colIndex];
-                            break;
-                        }
-                    }
+                if (isset($fieldToIndex['student_id']) && isset($row[$fieldToIndex['student_id']])) {
+                    $studentId = trim((string) $row[$fieldToIndex['student_id']]);
                 }
 
-                if (!$studentId) {
+                if (empty($studentId)) {
                     $errors[] = "Row {$rowNumber}: Student ID is required.";
                     continue;
                 }
 
-                // Verify candidate exists by student_id
+                // Find candidate by student_id
                 $candidate = Cadidate::where('student_id', $studentId)->first();
-                if (!$candidate) {
-                    $errors[] = "Row {$rowNumber}: Student ID {$studentId} not found.";
+                if (! $candidate) {
+                    $errors[] = "Row {$rowNumber}: Student ID '{$studentId}' not found in candidate list.";
+                    continue;
+                }
+                if ((int) $candidate->campaign_id !== $campaignId) {
+                    $errors[] = "Row {$rowNumber}: Student ID '{$studentId}' does not belong to this campaign.";
                     continue;
                 }
 
-                // Ensure candidate belongs to the campaign
-                if ($candidate->campaign_id != $campaignId) {
-                    $errors[] = "Row {$rowNumber}: Student ID {$studentId} does not belong to this campaign.";
+                // Extract score data
+                $rawCorrect   = (isset($fieldToIndex['raw_correct']) && isset($row[$fieldToIndex['raw_correct']]) && is_numeric($row[$fieldToIndex['raw_correct']]))
+                    ? (int) $row[$fieldToIndex['raw_correct']] : null;
+                $rawWrong     = (isset($fieldToIndex['raw_wrong']) && isset($row[$fieldToIndex['raw_wrong']]) && is_numeric($row[$fieldToIndex['raw_wrong']]))
+                    ? (int) $row[$fieldToIndex['raw_wrong']] : 0;
+                $rawUnanswered = (isset($fieldToIndex['raw_unanswered']) && isset($row[$fieldToIndex['raw_unanswered']]) && is_numeric($row[$fieldToIndex['raw_unanswered']]))
+                    ? (int) $row[$fieldToIndex['raw_unanswered']] : 0;
+
+                $hasRawScoreDirect = isset($fieldToIndex['raw_score']) && isset($row[$fieldToIndex['raw_score']]) && is_numeric($row[$fieldToIndex['raw_score']]);
+
+                if ($rawCorrect !== null) {
+                    // Calculate using subject rules
+                    $calcResult = $this->calculateScoreFromRules($rawCorrect, $rawWrong, $subjectRules, $rawUnanswered, $maxScore);
+
+                    $finalRawScore  = $calcResult['raw_score'];
+                    $deduction      = $calcResult['deduction'];
+                    $finalScore     = $calcResult['final_score'];
+
+                    // Clamp to subject's max_score
+                    $finalScore = min($finalScore, $maxScore);
+
+                } elseif ($hasRawScoreDirect) {
+                    // Use provided raw_score and deduction
+                    $finalRawScore  = (float) $row[$fieldToIndex['raw_score']];
+                    $deduction      = (isset($fieldToIndex['deduction']) && isset($row[$fieldToIndex['deduction']]) && is_numeric($row[$fieldToIndex['deduction']]))
+                        ? (float) $row[$fieldToIndex['deduction']] : 0;
+                    $finalScore     = max(0, min($finalRawScore - $deduction, $maxScore));
+                    $rawCorrect     = $rawCorrect ?? 0;
+
+                } else {
+                    $errors[] = "Row {$rowNumber}: Either Raw Score or Correct Count is required.";
                     continue;
                 }
 
-                // Ensure required fields
-                if (!isset($resultData['raw_score']) || !is_numeric($resultData['raw_score'])) {
-                    $errors[] = "Row {$rowNumber}: Raw score is required and must be numeric.";
-                    continue;
-                }
+                // Determine pass/fail for this subject
+                $passed = ScoringEngine::determinePassFail($finalScore, $passScore);
 
-                // Calculate final score (raw_score - deduction)
-                $finalScore = (float) $resultData['raw_score'];
-                if (isset($resultData['deduction']) && is_numeric($resultData['deduction'])) {
-                    $finalScore -= (float) $resultData['deduction'];
-                }
-                $resultData['final_score'] = $finalScore;
-
-                // Set defaults
-                $resultData['candidate_id'] = $candidateId;
-                $resultData['raw_correct'] = $resultData['raw_correct'] ?? 0;
-                $resultData['raw_wrong'] = $resultData['raw_wrong'] ?? 0;
-                $resultData['deduction'] = $resultData['deduction'] ?? 0;
-                $resultData['passed'] = false; // Will be calculated based on thresholds later
+                // Prepare result data
+                $resultData = [
+                    'candidate_id' => $candidate->id,
+                    'subject_id'   => $subjectId,
+                    'campaign_id'  => $campaignId,
+                    'raw_correct'  => $rawCorrect ?? 0,
+                    'raw_wrong'    => $rawWrong,
+                    'raw_score'    => round($finalRawScore, 2),
+                    'deduction'    => round($deduction, 2),
+                    'final_score'  => round($finalScore, 2),
+                    'passed'       => $passed ?? false,
+                    'status'       => 'draft',
+                    'version'      => 1,
+                ];
 
                 try {
-                    // Check if result already exists for this candidate and subject
-                    $existingResult = ExamResult::where('candidate_id', $candidateId)
-                        ->where('subject_id', $subjectId)
-                        ->first();
-
-                    if ($existingResult) {
-                        // Update existing result
-                        $existingResult->update($resultData);
-                    } else {
-                        // Create new result
-                        ExamResult::create($resultData);
-                    }
+                    // Upsert: update existing or create new
+                    ExamResult::updateOrCreate(
+                        [
+                            'candidate_id' => $candidate->id,
+                            'subject_id'   => $subjectId,
+                            'campaign_id'  => $campaignId,
+                        ],
+                        $resultData
+                    );
                     $importedCount++;
+                    $importedCandidateIds[$candidate->id] = true;
                 } catch (Exception $e) {
                     $errors[] = "Row {$rowNumber}: {$e->getMessage()}";
                 }
             }
 
+            // Calculate overall results for all imported candidates
+            if (! empty($importedCandidateIds)) {
+                $this->calculateOverallResults($campaignId, array_keys($importedCandidateIds));
+            }
+
             // Update import file status
             $importFile->update([
-                'status' => count($errors) > 0 ? 'error' : 'imported',
+                'status'        => count($errors) > 0 ? 'error' : 'imported',
                 'error_message' => count($errors) > 0 ? implode('; ', array_slice($errors, 0, 50)) : null,
-                'row_count' => $importedCount,
+                'row_count'     => $importedCount,
             ]);
 
             DB::commit();
         } catch (Exception $e) {
             DB::rollBack();
             $importFile->update([
-                'status' => 'error',
+                'status'        => 'error',
                 'error_message' => $e->getMessage(),
             ]);
 
@@ -318,9 +552,145 @@ class ExamResultImportService
 
         return [
             'imported' => $importedCount,
-            'skipped' => count($errors),
-            'errors' => $errors,
+            'skipped'  => count($errors),
+            'errors'   => $errors,
         ];
+    }
+
+    /**
+     * Calculate score from correct/wrong/unanswered counts using subject rules.
+     *
+     * Rules with sign '+' contribute points per correct answer.
+     * Rules with sign '-' deduct points per wrong answer.
+     *
+     * @param int   $correctCount
+     * @param int   $wrongCount
+     * @param array $rules  Array of rule arrays with 'sign' and 'value' keys
+     * @param int   $unansweredCount
+     *
+     * @return array{raw_score: float, deduction: float, final_score: float}
+     */
+    private function calculateScoreFromRules(
+        int $correctCount,
+        int $wrongCount,
+        array $rules,
+        int $unansweredCount = 0,
+        float $maxScore = 999999
+    ): array {
+        $pointsPerCorrect   = 0.0;
+        $deductionPerWrong  = 0.0;
+        $deductionPerUnanswered = 0.0;
+        $negativeMarking    = true;
+        $partialCredit      = 1.0;
+
+        foreach ($rules as $rule) {
+            $sign  = $rule['sign'] ?? '+';
+            $value = (float) ($rule['value'] ?? 0);
+            $name  = strtolower($rule['name'] ?? '');
+            $desc  = strtolower($rule['desc'] ?? '');
+
+            if ($sign === '+') {
+                $pointsPerCorrect += $value;
+            } elseif ($sign === '-') {
+                // Check if this is for wrong answers or unanswered
+                if (str_contains($name, 'unanswered') || str_contains($desc, 'unanswered') ||
+                    str_contains($name, 'blank') || str_contains($desc, 'blank') ||
+                    str_contains($name, 'skipped') || str_contains($desc, 'skipped')) {
+                    $deductionPerUnanswered += $value;
+                } else {
+                    $deductionPerWrong += $value;
+                }
+            }
+
+            // Check for special rule names
+            if (str_contains($name, 'negative') || str_contains($desc, 'negative')) {
+                $negativeMarking = $value > 0;
+            }
+            if (str_contains($name, 'partial') || str_contains($desc, 'partial')) {
+                $partialCredit = $value;
+            }
+        }
+
+        // Build deductionRules array for ScoringEngine
+        $deductionRules = [
+            'wrong_answer'     => -$deductionPerWrong,
+            'unanswered'       => -$deductionPerUnanswered,
+            'negative_marking' => $negativeMarking,
+            'partial_credit'   => $partialCredit,
+        ];
+
+        // Calculate raw score: correct count * points per correct
+        $rawScore = $correctCount * $pointsPerCorrect;
+
+        // Use the existing ScoringEngine for the calculation
+        $result = ScoringEngine::calculateSubjectScore(
+            rawScore:        $rawScore,
+            correctCount:    $correctCount,
+            wrongCount:      $wrongCount,
+            unansweredCount: $unansweredCount,
+            maxScore:        $maxScore,
+            deductionRules:  $deductionRules
+        );
+
+        return [
+            'raw_score'   => $result['raw_score'],
+            'deduction'   => abs($result['deduction']),
+            'final_score' => $result['final_score'],
+        ];
+    }
+
+    /**
+     * Calculate and store overall weighted results for imported candidates.
+     * This makes results immediately available in the Results & Analytics page.
+     */
+    private function calculateOverallResults(int $campaignId, array $candidateIds): void
+    {
+        $subjects = ExamSubject::where('campaign_id', $campaignId)->get();
+        $totalWeight = $subjects->sum('weight');
+
+        // Get overall threshold
+        $overallThreshold = ExamThreshold::where('campaign_id', $campaignId)
+            ->whereNull('subject_id')
+            ->first();
+        $overallPassScore = $overallThreshold ? (float) $overallThreshold->overall_pass_mark : null;
+
+        foreach ($candidateIds as $candidateId) {
+            $results = ExamResult::where('campaign_id', $campaignId)
+                ->where('candidate_id', $candidateId)
+                ->get()
+                ->keyBy('subject_id');
+
+            if ($results->isEmpty()) {
+                continue;
+            }
+
+            $totalWeighted = 0.0;
+
+            foreach ($subjects as $subject) {
+                $result = $results->get($subject->id);
+                if ($result && $subject->max_score > 0) {
+                    $pct = ($result->final_score / $subject->max_score) * 100;
+                    $totalWeighted += ($pct * $subject->weight) / 100;
+                }
+            }
+
+            $overallPct = $totalWeight > 0 ? round(($totalWeighted / $totalWeight) * 100, 2) : 0.0;
+            $overallPassed = ScoringEngine::determinePassFail($overallPct, $overallPassScore);
+
+            ExamOverallResult::updateOrCreate(
+                [
+                    'candidate_id' => $candidateId,
+                    'campaign_id'  => $campaignId,
+                ],
+                [
+                    'total_weighted_score' => round($totalWeighted, 2),
+                    'overall_percentage'   => $overallPct,
+                    'passed'               => $overallPassed ?? false,
+                    'status'               => 'draft',
+                    'version'              => 1,
+                ]
+            );
+        }
     }
 
     /**
@@ -328,16 +698,14 @@ class ExamResultImportService
      */
     private function readFile(string $filePath, string $extension): array
     {
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             throw new Exception("File not found: {$filePath}");
         }
 
-        // For CSV files, use PHP's built-in fgetcsv
         if (in_array($extension, ['csv', 'txt'])) {
             return $this->readCsv($filePath);
         }
 
-        // For Excel files, use PhpSpreadsheet
         return $this->readExcel($filePath);
     }
 
@@ -352,13 +720,11 @@ class ExamResultImportService
             throw new Exception("Cannot open file: {$filePath}");
         }
 
-        // Auto-detect delimiter
         $firstLine = fgets($handle);
         rewind($handle);
         $delimiter = $this->detectDelimiter($firstLine);
 
         while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
-            // Skip completely empty rows
             if (count($row) === 1 && (empty($row[0]) || trim($row[0]) === '')) {
                 continue;
             }
@@ -377,16 +743,13 @@ class ExamResultImportService
     {
         try {
             $spreadsheet = IOFactory::load($filePath);
-            $worksheet = $spreadsheet->getActiveSheet();
-            $data = $worksheet->toArray(null, true, true, false);
+            $worksheet   = $spreadsheet->getActiveSheet();
+            $data        = $worksheet->toArray(null, true, true, false);
 
-            // Remove empty trailing rows
-            while (!empty($data) && $this->isRowEmpty(end($data))) {
+            while (! empty($data) && $this->isRowEmpty(end($data))) {
                 array_pop($data);
             }
-
-            // Clean empty leading rows
-            while (!empty($data) && $this->isRowEmpty($data[0])) {
+            while (! empty($data) && $this->isRowEmpty($data[0])) {
                 array_shift($data);
             }
 
@@ -442,7 +805,7 @@ class ExamResultImportService
         $clean = preg_replace('/[^a-z0-9\s]/', '', $clean);
         $clean = preg_replace('/\s+/', ' ', $clean);
 
-        $bestMatch = null;
+        $bestMatch  = null;
         $bestLength = 0;
 
         foreach (self::HEADER_ALIASES as $dbField => $aliases) {
@@ -450,17 +813,15 @@ class ExamResultImportService
                 $aliasClean = preg_replace('/[^a-z0-9\s]/', '', strtolower($alias));
                 $aliasClean = preg_replace('/\s+/', ' ', $aliasClean);
 
-                // Exact match
                 if ($clean === $aliasClean) {
                     return $dbField;
                 }
 
-                // Contains match
                 if (str_contains($clean, $aliasClean) || str_contains($aliasClean, $clean)) {
                     $aliasLen = strlen($aliasClean);
                     if ($aliasLen > $bestLength) {
                         $bestLength = $aliasLen;
-                        $bestMatch = $dbField;
+                        $bestMatch  = $dbField;
                     }
                 }
             }

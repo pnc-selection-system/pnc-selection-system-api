@@ -26,4 +26,9 @@ class Province extends Model
     {
         return $this->belongsToMany(SelectCampaing::class, 'campaign_province', 'province_id', 'selection_campaign_id');
     }
+
+    public function candidates(): HasMany
+    {
+        return $this->hasMany(Cadidate::class, 'province_id');
+    }
 }
