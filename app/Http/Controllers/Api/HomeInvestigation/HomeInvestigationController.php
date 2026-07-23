@@ -8,9 +8,13 @@ use App\Http\Requests\Api\HomeInvestigation\SubmitInvestigationRequest;
 use App\Http\Requests\Api\HomeInvestigation\StoreLegacyInvestigationRequest;
 use App\Http\Requests\Api\HomeInvestigation\UpdateLegacyInvestigationRequest;
 use App\Http\Requests\Api\HomeInvestigation\RejectInvestigationRequest;
+use App\Models\Candidate;
 use App\Models\HomeInvestigation;
 use App\Models\HomeInvestigationFile;
 use App\Models\InvestigationHistory;
+use App\Models\Role;
+use App\Models\SelectCampaing;
+use App\Models\User;
 use App\Enums\InvestigationStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,6 +44,14 @@ class HomeInvestigationController extends Controller
     /**
      * 3.2 Candidates List
      * GET /home-investigation/candidates
+     *
+     * Queries the candidates table directly and left-joins home_investigations
+     * so that ALL candidates appear — even those without an investigation record yet.
+     *
+     * Performance notes:
+     * - Uses simplePaginate() to avoid expensive COUNT(*) queries
+     * - Searches on individual name columns instead of CONCAT in WHERE
+     * - Concatenates candidate name in PHP instead of DB::raw
      */
     public function candidates(Request $request): JsonResponse
     {
@@ -47,58 +59,87 @@ class HomeInvestigationController extends Controller
         $userRole = $user->role_id ?? null;
         $userName = $user->name ?? '';
 
-        $query = HomeInvestigation::query();
+        $query = Candidate::query()
+            ->leftJoin('home_investigations', 'candidates.id', '=', 'home_investigations.candidate_id')
+            ->leftJoin('selection_campaigns', 'candidates.campaign_id', '=', 'selection_campaigns.id')
+            ->select([
+                'candidates.id',
+                'candidates.first_name',
+                'candidates.last_name',
+                'selection_campaigns.name AS campaign',
+                'home_investigations.assigned_investigator',
+                'home_investigations.visit_date',
+                'home_investigations.status',
+                'candidates.gender',
+                'candidates.phone',
+                DB::raw("COALESCE(home_investigations.current_address, '') AS current_address"),
+            ]);
 
-        // Authorization: Investigator sees only own candidates
+        // Authorization: Investigator sees only own candidates (those assigned to them)
+        // or candidates without any investigation yet (so they can claim them).
         if ($this->isInvestigator($userRole)) {
-            $query->where('assigned_investigator', $userName);
+            $query->where(function ($q) use ($userName) {
+                $q->where('home_investigations.assigned_investigator', $userName)
+                  ->orWhereNull('home_investigations.id');
+            });
         }
 
-        // Filters
+        // Filters — search on individual columns to avoid expensive CONCAT in WHERE
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('candidate_id', 'like', "%{$search}%")
-                  ->orWhere('candidate_name', 'like', "%{$search}%");
+                $q->where('candidates.id', 'like', "%{$search}%")
+                  ->orWhere('candidates.first_name', 'like', "%{$search}%")
+                  ->orWhere('candidates.last_name', 'like', "%{$search}%");
             });
         }
 
         if ($campaign = $request->get('campaign')) {
-            $query->where('campaign', $campaign);
+            $query->where('selection_campaigns.name', $campaign);
         }
 
         if ($investigator = $request->get('investigator')) {
-            $query->where('assigned_investigator', $investigator);
+            $query->where('home_investigations.assigned_investigator', $investigator);
         }
 
         if ($status = $request->get('status')) {
-            $query->where('status', $status);
+            // When filtering by 'Assigned', also include candidates without any investigation
+            // (NULL status from LEFT JOIN) since they display as 'Assigned' in the UI
+            if ($status === InvestigationStatus::Assigned->value) {
+                $query->where(function ($q) use ($status) {
+                    $q->where('home_investigations.status', $status)
+                      ->orWhereNull('home_investigations.status');
+                });
+            } else {
+                $query->where('home_investigations.status', $status);
+            }
         }
 
         if ($dateFrom = $request->get('dateFrom')) {
-            $query->whereDate('visit_date', '>=', $dateFrom);
+            $query->whereDate('home_investigations.visit_date', '>=', $dateFrom);
         }
 
         if ($dateTo = $request->get('dateTo')) {
-            $query->whereDate('visit_date', '<=', $dateTo);
+            $query->whereDate('home_investigations.visit_date', '<=', $dateTo);
         }
 
-        // Default sort
-        $query->orderBy('visit_date')->orderBy('candidate_id');
+        // Default sort: push NULL visit_dates (no investigation) to the end
+        $query->orderByRaw('home_investigations.visit_date IS NULL, home_investigations.visit_date ASC, candidates.id ASC');
 
-        $perPage = (int) $request->get('perPage', 50);
-        $paginator = $query->paginate($perPage);
+        $perPage = (int) $request->get('perPage', 20);
+        // Use simplePaginate to skip expensive COUNT query — only loads "perPage + 1" rows
+        $paginator = $query->simplePaginate($perPage);
 
         $data = collect($paginator->items())->map(function ($item) {
             return [
-                'candidateId' => $item->candidate_id,
-                'candidateName' => $item->candidate_name,
-                'campaign' => $item->campaign,
-                'assignedInvestigator' => $item->assigned_investigator,
-                'visitDate' => $item->visit_date ? $item->visit_date->format('d/m/Y') : null,
-                'status' => $item->status,
-                'gender' => $item->gender,
-                'phoneNumber' => $item->phone_number,
-                'currentAddress' => $item->current_address,
+                'candidateId' => (string) $item->id,
+                'candidateName' => trim(($item->first_name ?? '') . ' ' . ($item->last_name ?? '')),
+                'campaign' => $item->campaign ?? '',
+                'assignedInvestigator' => $item->assigned_investigator ?? '',
+                'visitDate' => $item->visit_date ? date('d/m/Y', strtotime($item->visit_date)) : null,
+                'status' => $item->status ?? 'Assigned',
+                'gender' => $item->gender ?? '',
+                'phoneNumber' => $item->phone ?? '',
+                'currentAddress' => $item->current_address ?? '',
             ];
         });
 
@@ -107,8 +148,7 @@ class HomeInvestigationController extends Controller
             'pagination' => [
                 'page' => $paginator->currentPage(),
                 'perPage' => $paginator->perPage(),
-                'total' => $paginator->total(),
-                'totalPages' => $paginator->lastPage(),
+                'hasMorePages' => $paginator->hasMorePages(),
             ],
         ]);
     }
@@ -116,13 +156,39 @@ class HomeInvestigationController extends Controller
     /**
      * 3.3 Investigation Form Data
      * GET /home-investigation/candidates/{candidateId}
+     *
+     * If no investigation record exists yet, returns default form data
+     * populated from the candidate record so the user can start filling it in.
      */
     public function showByCandidate(string $candidateId): JsonResponse
     {
         $investigation = HomeInvestigation::where('candidate_id', $candidateId)->first();
 
         if (!$investigation) {
-            return response()->json(['error' => 'Candidate not found'], 404);
+            // No investigation yet — return default data from the candidates table
+            $candidate = Candidate::with('campaign')->find($candidateId);
+            if (!$candidate) {
+                return response()->json(['error' => 'Candidate not found'], 404);
+            }
+
+            return response()->json([
+                'candidateId' => (string) $candidateId,
+                'candidateName' => trim(($candidate->first_name ?? '') . ' ' . ($candidate->last_name ?? '')),
+                'campaign' => $candidate->campaign?->name ?? '',
+                'gender' => $candidate->gender ?? '',
+                'phoneNumber' => $candidate->phone ?? '',
+                'currentAddress' => '',
+                'assignedInvestigator' => '',
+                'currentStatus' => InvestigationStatus::Assigned->value,
+                'visitDate' => null,
+                'location' => null,
+                'gpsCoordinates' => null,
+                'peopleMet' => null,
+                'observations' => null,
+                'findings' => null,
+                'recommendation' => null,
+                'reason' => null,
+            ]);
         }
 
         $this->authorizeView($investigation);
@@ -133,13 +199,36 @@ class HomeInvestigationController extends Controller
     /**
      * 3.4 Save Draft
      * PUT /home-investigation/candidates/{candidateId}/draft
+     *
+     * Creates a new investigation record if none exists yet,
+     * otherwise updates the existing draft.
      */
     public function saveDraft(SaveDraftRequest $request, string $candidateId): JsonResponse
     {
         $investigation = HomeInvestigation::where('candidate_id', $candidateId)->first();
 
         if (!$investigation) {
-            return response()->json(['error' => 'Candidate not found'], 404);
+            // No investigation yet — create one with candidate data + draft fields
+            $candidate = Candidate::with('campaign')->find($candidateId);
+            if (!$candidate) {
+                return response()->json(['error' => 'Candidate not found'], 404);
+            }
+
+            $data = $this->mapFormFields($request->validated());
+            $data['candidate_id'] = (int) $candidateId;
+            $data['candidate_name'] = trim(($candidate->first_name ?? '') . ' ' . ($candidate->last_name ?? ''));
+            $data['campaign'] = $candidate->campaign?->name ?? '';
+            $data['campaign_id'] = $candidate->campaign_id;
+            $data['gender'] = $candidate->gender;
+            $data['phone_number'] = $candidate->phone;
+            $data['status'] = InvestigationStatus::InProgress->value;
+            $data['assigned_investigator'] = Auth::user()->name ?? '';
+
+            $investigation = HomeInvestigation::create($data);
+
+            $this->logHistory($investigation->id, 'Created');
+
+            return response()->json($this->formatInvestigationDetail($investigation));
         }
 
         $this->authorizeView($investigation);
@@ -164,13 +253,37 @@ class HomeInvestigationController extends Controller
     /**
      * 3.5 Submit Investigation
      * PUT /home-investigation/candidates/{candidateId}/submit
+     *
+     * Creates a new investigation record if none exists yet and immediately submits it.
      */
     public function submit(SubmitInvestigationRequest $request, string $candidateId): JsonResponse
     {
         $investigation = HomeInvestigation::where('candidate_id', $candidateId)->first();
 
         if (!$investigation) {
-            return response()->json(['error' => 'Candidate not found'], 404);
+            // No investigation yet — create one with candidate data + submitted fields
+            $candidate = Candidate::with('campaign')->find($candidateId);
+            if (!$candidate) {
+                return response()->json(['error' => 'Candidate not found'], 404);
+            }
+
+            $data = $this->mapFormFields($request->validated());
+            $data['candidate_id'] = (int) $candidateId;
+            $data['candidate_name'] = trim(($candidate->first_name ?? '') . ' ' . ($candidate->last_name ?? ''));
+            $data['campaign'] = $candidate->campaign?->name ?? '';
+            $data['campaign_id'] = $candidate->campaign_id;
+            $data['gender'] = $candidate->gender;
+            $data['phone_number'] = $candidate->phone;
+            $data['status'] = InvestigationStatus::Submitted->value;
+            $data['submitted_at'] = now();
+            $data['assigned_investigator'] = Auth::user()->name ?? '';
+
+            $investigation = HomeInvestigation::create($data);
+
+            $this->logHistory($investigation->id, 'Created');
+            $this->logHistory($investigation->id, 'Submitted');
+
+            return response()->json($this->formatInvestigationDetail($investigation));
         }
 
         $this->authorizeView($investigation);
@@ -198,9 +311,9 @@ class HomeInvestigationController extends Controller
      */
     public function campaigns(): JsonResponse
     {
-        $campaigns = HomeInvestigation::whereNotNull('campaign')
-            ->distinct()
-            ->pluck('campaign');
+        $campaigns = SelectCampaing::whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name');
 
         return response()->json(['data' => $campaigns]);
     }
@@ -211,9 +324,14 @@ class HomeInvestigationController extends Controller
      */
     public function investigators(): JsonResponse
     {
-        $investigators = HomeInvestigation::whereNotNull('assigned_investigator')
-            ->distinct()
-            ->pluck('assigned_investigator');
+        // Get users with investigator-type roles (Officer, Staff, etc.)
+        $investigatorRoleNames = ['Investigator', 'Staff', 'Officer'];
+        $roleIds = Role::whereIn('name', $investigatorRoleNames)->pluck('id');
+
+        $investigators = User::whereIn('role_id', $roleIds)
+            ->whereNotNull('name')
+            ->orderBy('name')
+            ->pluck('name');
 
         return response()->json(['data' => $investigators]);
     }
@@ -246,7 +364,7 @@ class HomeInvestigationController extends Controller
         $investigation = HomeInvestigation::where('candidate_id', $candidateId)->first();
 
         if (!$investigation) {
-            return response()->json(['error' => 'Candidate not found'], 404);
+            return response()->json(['data' => []]);
         }
 
         $attachments = HomeInvestigationFile::where('home_investigation_id', $investigation->id)
@@ -258,7 +376,7 @@ class HomeInvestigationController extends Controller
                     'type' => $file->file_type,
                     'size' => (int) $file->file_size,
                     'uploadDate' => $file->created_at ? $file->created_at->toIso8601String() : null,
-                    'url' => Storage::url($file->file_path),
+                    'url' => url('uploads/' . $file->file_path),
                 ];
             });
 
@@ -268,13 +386,32 @@ class HomeInvestigationController extends Controller
     /**
      * 3.7.2 Upload Attachment
      * POST /home-investigation/candidates/{candidateId}/attachments
+     *
+     * Auto-creates a draft investigation if none exists yet.
      */
     public function uploadAttachment(Request $request, string $candidateId): JsonResponse
     {
         $investigation = HomeInvestigation::where('candidate_id', $candidateId)->first();
 
         if (!$investigation) {
-            return response()->json(['error' => 'Candidate not found'], 404);
+            // Auto-create a draft investigation
+            $candidate = Candidate::with('campaign')->find($candidateId);
+            if (!$candidate) {
+                return response()->json(['error' => 'Candidate not found'], 404);
+            }
+
+            $investigation = HomeInvestigation::create([
+                'candidate_id' => (int) $candidateId,
+                'candidate_name' => trim(($candidate->first_name ?? '') . ' ' . ($candidate->last_name ?? '')),
+                'campaign' => $candidate->campaign?->name ?? '',
+                'campaign_id' => $candidate->campaign_id,
+                'gender' => $candidate->gender,
+                'phone_number' => $candidate->phone,
+                'status' => InvestigationStatus::InProgress->value,
+                'assigned_investigator' => Auth::user()->name ?? '',
+            ]);
+
+            $this->logHistory($investigation->id, 'Created');
         }
 
         // Validate file
@@ -319,7 +456,7 @@ class HomeInvestigationController extends Controller
             'type' => $attachment->file_type,
             'size' => (int) $attachment->file_size,
             'uploadDate' => $attachment->created_at->toIso8601String(),
-            'url' => Storage::url($attachment->file_path),
+            'url' => url('uploads/' . $attachment->file_path),
         ], 201);
     }
 
@@ -884,7 +1021,7 @@ class HomeInvestigationController extends Controller
     private function formatInvestigationDetail(HomeInvestigation $investigation): array
     {
         return [
-            'candidateId' => $investigation->candidate_id,
+            'candidateId' => (string) $investigation->candidate_id,
             'candidateName' => $investigation->candidate_name,
             'campaign' => $investigation->campaign,
             'gender' => $investigation->gender,
