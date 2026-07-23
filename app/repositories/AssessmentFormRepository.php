@@ -3,64 +3,81 @@
 namespace App\Repositories;
 
 use App\Models\AssessmentForm;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class AssessmentFormRepository
 {
+    protected static bool $schemaFixAttempted = false;
+
+    /**
+     * Auto-fix: Ensure the assessment_forms table has all expected columns.
+     * Runs only once per request.
+     */
+    protected function ensureFormTableSchema(): void
+    {
+        if (static::$schemaFixAttempted) {
+            return;
+        }
+        static::$schemaFixAttempted = true;
+
+        try {
+            // Get existing columns
+            $schemaName = DB::connection()->getDatabaseName();
+            $existingColumns = DB::select(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'assessment_forms'",
+                [$schemaName]
+            );
+            $existingColNames = array_column($existingColumns, 'COLUMN_NAME');
+
+            // Add schema column if missing (critical for saving form fields)
+            if (!in_array('schema', $existingColNames)) {
+                Schema::table('assessment_forms', function ($table) {
+                    $table->json('schema')->nullable();
+                });
+            }
+        } catch (\Exception $e) {
+            // Silently fail
+        }
+    }
+
     public function list(array $filters = [])
     {
-        return AssessmentForm::with('questions')
-            ->when($filters['campaign_id'] ?? null, fn($q, $v) => $q->where('campaign_id', $v))
-            ->orderBy('id', 'desc')
-            ->get();
+        $this->ensureFormTableSchema();
+
+        return AssessmentForm::select('id', 'campaign_id', 'name')
+            ->with('campaign:id,name,year,status')
+            ->when(
+                !empty($filters['campaign_id']),
+                fn($q) => $q->where('campaign_id', (int) $filters['campaign_id'])
+            )
+            ->latest('id')
+            ->paginate($filters['per_page'] ?? 10);
     }
 
-    public function find(int $id)
+    public function create(array $data): AssessmentForm
     {
-        return AssessmentForm::with('questions')->findOrFail($id);
+        $this->ensureFormTableSchema();
+        return AssessmentForm::create($data);
     }
 
-    public function store(array $data)
+    public function find(AssessmentForm $assessmentForm): AssessmentForm
     {
-        $questions = $data['schema']['fields'] ?? [];
-        unset($data['schema']);
-
-        $form = AssessmentForm::create($data);
-
-        foreach ($questions as $i => $field) {
-            $form->questions()->create([
-                'key' => $field['key'] ?? 'question_' . $i,
-                'label' => $field['label'],
-                'type' => $field['type'],
-                'order' => $i + 1,
-                'weight' => $field['weight'] ?? 1,
-                'options' => $field['options'] ?? null,
-                'point_map' => $field['point_map'] ?? null,
-            ]);
-        }
-
-        return $form->load('questions');
+        $this->ensureFormTableSchema();
+        return $assessmentForm;
     }
 
     public function update(int $id, array $data)
     {
-        $form = AssessmentForm::findOrFail($id);
-        $form->update($data);
+        $this->ensureFormTableSchema();
+        $assessmentForm->update($data);
+        return $assessmentForm;
+    }
 
-        if (isset($data['schema']['fields'])) {
-            $form->questions()->delete();
-            foreach ($data['schema']['fields'] as $i => $field) {
-                $form->questions()->create([
-                    'key' => $field['key'] ?? 'question_' . $i,
-                    'label' => $field['label'],
-                    'type' => $field['type'],
-                    'order' => $i + 1,
-                    'weight' => $field['weight'] ?? 1,
-                    'options' => $field['options'] ?? null,
-                    'point_map' => $field['point_map'] ?? null,
-                ]);
-            }
-        }
-
-        return $form->load('questions');
+    public function delete(AssessmentForm $assessmentForm): void
+    {
+        $assessmentForm->delete();
     }
 }
