@@ -13,6 +13,7 @@ class AssessmentForm extends Model
         'campaign_id',
         'name',
         'schema',
+        'pass_threshold',
     ];
 
     protected $casts = [
@@ -128,20 +129,63 @@ class AssessmentForm extends Model
         return round($weightedScore / $totalWeight * 100, 2);
     }
 
+    /**
+     * Normalize a raw answer value to a 0.0–1.0 scale for scoring.
+     *
+     * Priority order:
+     * 1. If the field has a `point_map` (e.g. { "1": 0, "2": 0.25, "3": 0.5, "4": 0.75, "5": 1 }),
+     *    the exact mapped value is used. This allows non-linear scoring (e.g.
+     *    rating 1 = 0 pts, rating 5 = full pts).
+     * 2. Otherwise, linear interpolation between `rules.min` and `rules.max`
+     *    is applied: (value - min) / (max - min).
+     * 3. If no min/max are set in rules, defaults for the field type are used:
+     *    - rating (scale 1-5): min=1, max=5
+     *    - number: raw value clamped to [0,1]
+     */
     protected function normalizeValue(array $field, $value): float
     {
         if (! is_numeric($value)) {
             return 0.0;
         }
 
+        $floatVal = (float) $value;
+
+        // Priority 1: Use point_map if defined for the field
+        $pointMap = $field['point_map'] ?? null;
+        if (is_array($pointMap) && ! empty($pointMap)) {
+            $strVal = (string) $floatVal;
+            if (array_key_exists($strVal, $pointMap)) {
+                $mapped = (float) $pointMap[$strVal];
+                return max(0.0, min(1.0, $mapped));
+            }
+        }
+
+        // Priority 2: Linear interpolation between min and max
         $config = $field['rules'] ?? [];
-        $min = isset($config['min']) ? (float) $config['min'] : 0;
-        $max = isset($config['max']) ? (float) $config['max'] : null;
+        
+        // Determine min/max: from rules first, then type defaults
+        $type = $field['type'] ?? null;
+        
+        if (isset($config['min'])) {
+            $min = (float) $config['min'];
+        } elseif ($type === 'rating') {
+            $min = 1.0;
+        } else {
+            $min = 0.0;
+        }
+
+        if (isset($config['max'])) {
+            $max = (float) $config['max'];
+        } elseif ($type === 'rating') {
+            $max = 5.0;
+        } else {
+            $max = null;
+        }
 
         if ($max !== null && $max > $min) {
-            $normalized = ((float) $value - $min) / ($max - $min);
+            $normalized = ($floatVal - $min) / ($max - $min);
         } else {
-            $normalized = (float) $value;
+            $normalized = $floatVal;
         }
 
         return max(0.0, min(1.0, $normalized));
