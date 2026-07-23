@@ -45,10 +45,6 @@ class InfoSessionController extends Controller
     public function destroy(int $id)
     {
         $this->service->delete($id);
-<<<<<<< HEAD
-        return ApiResponse::success(null, 'Information Session deleted successfully.');
-=======
         return ApiResponse::ok('Information Session deleted successfully.');
->>>>>>> 8cd37ab8412aabb483c5b30e8829b8975c19875a
     }
 }
