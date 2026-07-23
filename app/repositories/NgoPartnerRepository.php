@@ -6,12 +6,13 @@ use App\Models\Cadidate;
 use App\Models\NgoContactPersion;
 use App\Models\NgoPartner;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Storage;
 
 class NgoPartnerRepository
 {
     public function list(array $filters = [])
     {
-        return NgoPartner::select('id', 'name', 'type', 'address', 'phone', 'email', 'active', 'status')
+        return NgoPartner::select('id', 'name', 'type', 'address', 'phone', 'email', 'image', 'active', 'status')
             ->with('contactPersons:id,ngo_partner_id,full_name,phone,email')
             ->when(
                 !empty($filters['search']),
@@ -31,6 +32,10 @@ class NgoPartnerRepository
 
     public function create(array $data): NgoPartner
     {
+        if (isset($data['image']) && $data['image']) {
+            $data['image'] = $this->uploadImage($data['image']);
+        }
+
         return NgoPartner::create($data);
     }
 
@@ -41,9 +46,25 @@ class NgoPartnerRepository
 
     public function update(NgoPartner $ngoPartner, array $data): NgoPartner
     {
+        if (isset($data['image']) && $data['image']) {
+            // Delete old image if exists
+            if ($ngoPartner->image) {
+                Storage::disk('public')->delete($ngoPartner->image);
+            }
+            $data['image'] = $this->uploadImage($data['image']);
+        }
+
         $ngoPartner->update($data);
 
         return $ngoPartner;
+    }
+
+    private function uploadImage($image): string
+    {
+        $path = 'ngo-partners/' . uniqid() . '.' . $image->getClientOriginalExtension();
+        $image->storeAs('public/' . dirname($path), basename($path));
+
+        return $path;
     }
 
     public function delete(NgoPartner $ngoPartner): void

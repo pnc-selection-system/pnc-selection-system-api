@@ -13,6 +13,7 @@ class NgoPartner extends Model
         'address',
         'phone',
         'email',
+        'image',
         'active',
         'status',
     ];
