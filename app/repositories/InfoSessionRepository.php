@@ -45,19 +45,20 @@ class InfoSessionRepository
             'province_id'         => $data['province_id'] ?? null,
             'district_id'         => $data['district_id'] ?? null,
             'commune_id'          => $data['commune_id'] ?? null,
-            'village_id'          => $data['village_id'] ?? null,
-            'school'              => !empty($data['school']) ? $data['school'] : null,
+            'village_id'          => $data['village_id'] ?? $session->village_id,
+            'school'              => !empty($data['school']) ? $data['school'] : $session->school,
             'session_date'        => $data['session_date'] ?? null,
-            'session_time'        => !empty($data['session_time']) ? $data['session_time'] : null,
+            'session_time'        => !empty($data['session_time']) ? $data['session_time'] : $session->session_time,
             'expected_attendance' => $data['expected_attendance'] ?? null,
             'attendance_count'    => $data['attendance_count'] ?? null,
             'partner_type'        => $data['partner_type'] ?? null,
             'partner_name'        => $data['partner_name'] ?? null,
             'host_by'             => $data['host_by'] ?? null,
-            'venue'               => $data['venue'] ?? null,
-            'location'            => $data['location'] ?? null,
-            'department'          => $data['department'] ?? null,
-            'generation'          => $data['generation'] ?? null,
+            'venue'               => $data['venue'] ?? $session->venue,
+            'location'            => $data['location'] ?? $session->location,
+            'department'          => $data['department'] ?? $session->department,
+            'generation'          => $data['generation'] ?? $session->generation,
+            'created_by'          => $data['created_by'] ?? $session->created_by,
         ], fn($v) => $v !== null));
 
         if (isset($data['hosts'])) {
@@ -79,23 +80,25 @@ class InfoSessionRepository
     {
         $session = InfoSession::create([
             'campaign_id'         => $data['campaign_id'],
-            'created_by'          => $data['created_by'] ?? null,
             'province_id'         => $data['province_id'] ?? null,
             'district_id'         => $data['district_id'] ?? null,
             'commune_id'          => $data['commune_id'] ?? null,
-            'village_id'          => $data['village_id'] ?? null,
-            'school'              => !empty($data['school']) ? $data['school'] : null,
+            'village_id'          => $data['village_id']
+                ?? \App\Models\Village::query()->value('id')
+                ?? throw new \RuntimeException('No villages found in database. Seed villages or run: php artisan migrate'),
+            'school'              => !empty($data['school']) ? $data['school'] : '-',
             'session_date'        => $data['session_date'],
-            'session_time'        => !empty($data['session_time']) ? $data['session_time'] : null,
+            'session_time'        => !empty($data['session_time']) ? $data['session_time'] : '00:00:00',
             'expected_attendance' => $data['expected_attendance'],
             'attendance_count'    => $data['attendance_count'] ?? 0,
             'partner_type'        => $data['partner_type'] ?? null,
             'partner_name'        => $data['partner_name'] ?? null,
             'host_by'             => $data['host_by'] ?? null,
-            'venue'               => $data['venue'] ?? 'School',
+            'venue'               => $data['venue'] ?? null,
             'location'            => $data['location'] ?? null,
             'department'          => $data['department'] ?? null,
             'generation'          => $data['generation'] ?? null,
+            'created_by'          => $data['created_by'] ?? null,
         ]);
 
         if (isset($data['hosts']) && is_array($data['hosts'])) {
@@ -109,13 +112,6 @@ class InfoSessionRepository
         }
 
         return $session->refresh()->load($this->withRelations);
-    }
-
-    public function delete(int $id): void
-    {
-        $session = InfoSession::findOrFail($id);
-        $session->hosts()->delete();
-        $session->delete();
     }
 
     public function delete(int $id): void
