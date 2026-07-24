@@ -17,13 +17,8 @@ return new class extends Migration
             $table->foreignId('campaign_id')
                 ->constrained('selection_campaigns')
                 ->onDelete('cascade');
-            $table->foreignId('candidate_id')
-                ->constrained('candidates')
-                ->onDelete('cascade');
-            $table->foreignId('subject_id')
-                ->nullable()
-                ->constrained('exam_subjects')
-                ->onDelete('cascade');
+            $table->unsignedBigInteger('candidate_id');
+            $table->unsignedBigInteger('subject_id')->nullable();
             $table->json('old_data');
             $table->json('new_data');
             $table->integer('version');
