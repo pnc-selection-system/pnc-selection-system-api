@@ -9,7 +9,7 @@ class InfoSessionHost extends Model
 {
     protected $fillable = [
         'info_session_id',
-        'host_name',
+        'host_by',
     ];
 
     public function infoSession(): BelongsTo

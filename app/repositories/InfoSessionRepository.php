@@ -7,7 +7,7 @@ use App\Models\InfoSession;
 class InfoSessionRepository
 {
     private array $withRelations = [
-        'hosts:id,info_session_id,host_name',
+        'hosts:id,info_session_id,host_by',
         'province:id,name',
         'district:id,name',
         'commune:id,name',
@@ -64,12 +64,12 @@ class InfoSessionRepository
         if (isset($data['hosts'])) {
             $session->hosts()->delete();
             $session->hosts()->createMany(
-                array_map(fn($h) => ['host_name' => $h['host_name']], $data['hosts'])
+                array_map(fn($h) => ['host_by' => $h['host_by']], $data['hosts'])
             );
         } elseif (!empty($data['host_by'])) {
             $session->hosts()->delete();
             $session->hosts()->create([
-                'host_name' => $data['host_by']
+                'host_by' => $data['host_by']
             ]);
         }
 
@@ -103,11 +103,11 @@ class InfoSessionRepository
 
         if (isset($data['hosts']) && is_array($data['hosts'])) {
             $session->hosts()->createMany(
-                array_map(fn($h) => ['host_name' => $h['host_name']], $data['hosts'])
+                array_map(fn($h) => ['host_by' => $h['host_by']], $data['hosts'])
             );
         } elseif (!empty($data['host_by'])) {
             $session->hosts()->create([
-                'host_name' => $data['host_by']
+                'host_by' => $data['host_by']
             ]);
         }
 
