@@ -2,52 +2,72 @@
 
 namespace App\Http\Controllers\Api\AssessmentForm;
 
-use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\AssessmentForm\StoreAssessmentFormRequest;
-use App\Http\Requests\Api\AssessmentForm\UpdateAssessmentFormRequest;
-use App\Models\AssessmentForm;
-use Illuminate\Http\JsonResponse;
-use Services\AssessmentFormServices;
+use App\Services\AssessmentFormService;
+use App\Helpers\ApiResponse;
+use Illuminate\Http\Request;
 
 class AssessmentFormController extends Controller
 {
-    public function __construct(protected AssessmentFormServices $assessmentFormService) {}
+    public function __construct(
+        protected AssessmentFormService $service
+    ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request)
     {
-        $assessmentForms = $this->assessmentFormService->list(request()->only(['campaign_id', 'per_page']));
-
-        return ApiResponse::success($assessmentForms, 'Assessment forms retrieved successfully');
+        $forms = $this->service->list($request->only(['campaign_id']));
+        return ApiResponse::success($forms, 'Assessment forms retrieved successfully.');
     }
 
-    public function store(StoreAssessmentFormRequest $request): JsonResponse
+    public function show(int $id)
     {
-        $assessmentForm = $this->assessmentFormService->create($request->validated());
-
-        return ApiResponse::created($assessmentForm, 'Assessment form created successfully');
+        $form = $this->service->find($id);
+        return ApiResponse::success($form, 'Assessment form retrieved successfully.');
     }
 
-    public function show(AssessmentForm $assessmentForm): JsonResponse
+    public function store(Request $request)
     {
-        return ApiResponse::success(
-            $this->assessmentFormService->find($assessmentForm),
-            'Assessment form retrieved successfully'
-        );
+        $data = $request->validate([
+            'campaign_id' => 'required|integer|exists:campaigns,id',
+            'name' => 'required|string|max:255',
+            'pass_threshold' => 'nullable|integer|min:0|max:100',
+            'schema' => 'nullable|array',
+            'schema.fields' => 'nullable|array',
+            'schema.fields.*.key' => 'nullable|string',
+            'schema.fields.*.label' => 'required|string',
+            'schema.fields.*.type' => 'required|string',
+            'schema.fields.*.weight' => 'nullable|integer',
+            'schema.fields.*.options' => 'nullable|array',
+            'schema.fields.*.point_map' => 'nullable|array',
+        ]);
+
+        $form = $this->service->store($data);
+        return ApiResponse::created($form, 'Assessment form created successfully.');
     }
 
-    public function update(UpdateAssessmentFormRequest $request, AssessmentForm $assessmentForm): JsonResponse
+    public function update(Request $request, int $id)
     {
-        $assessmentForm = $this->assessmentFormService->update($assessmentForm, $request->validated());
+        $data = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'pass_threshold' => 'nullable|integer|min:0|max:100',
+            'schema' => 'nullable|array',
+            'schema.fields' => 'nullable|array',
+            'schema.fields.*.key' => 'nullable|string',
+            'schema.fields.*.label' => 'required_with:schema.fields|string',
+            'schema.fields.*.type' => 'required_with:schema.fields|string',
+            'schema.fields.*.weight' => 'nullable|integer',
+            'schema.fields.*.options' => 'nullable|array',
+            'schema.fields.*.point_map' => 'nullable|array',
+        ]);
 
-        return ApiResponse::success($assessmentForm, 'Assessment form updated successfully');
+        $form = $this->service->update($id, $data);
+        return ApiResponse::success($form, 'Assessment form updated successfully.');
     }
 
-    public function destroy(AssessmentForm $assessmentForm): JsonResponse
+    public function questions(int $id)
     {
-        $this->assessmentFormService->delete($assessmentForm);
-
-        return ApiResponse::ok('Assessment form deleted successfully');
+        $form = $this->service->find($id);
+        return ApiResponse::success($form->questions, 'Questions retrieved successfully.');
     }
 
     /**

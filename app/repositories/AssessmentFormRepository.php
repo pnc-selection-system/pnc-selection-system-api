@@ -1,6 +1,6 @@
 <?php
 
-namespace Repositories;
+namespace App\Repositories;
 
 use App\Models\AssessmentForm;
 use Illuminate\Database\Eloquent\Collection;
@@ -57,19 +57,19 @@ class AssessmentFormRepository
             ->paginate($filters['per_page'] ?? 10);
     }
 
-    public function create(array $data): AssessmentForm
+    public function find(int $id)
     {
         $this->ensureFormTableSchema();
         return AssessmentForm::create($data);
     }
 
-    public function find(AssessmentForm $assessmentForm): AssessmentForm
+    public function store(array $data)
     {
         $this->ensureFormTableSchema();
         return $assessmentForm;
     }
 
-    public function update(AssessmentForm $assessmentForm, array $data): AssessmentForm
+    public function update(int $id, array $data)
     {
         $this->ensureFormTableSchema();
         $assessmentForm->update($data);

@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 class Candidate extends Model
 {
     protected $table = 'candidates';
 
     protected $fillable = [
+        'student_id',
         'campaign_id',
         'province_id',
         'school_name',
@@ -27,6 +29,41 @@ class Candidate extends Model
     protected $casts = [
         'dob' => 'date',
     ];
+
+    /**
+     * Boot the model and register events.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function ($candidate) {
+            if (empty($candidate->student_id)) {
+                $candidate->student_id = self::generateStudentId();
+            }
+        });
+    }
+
+    /**
+     * Generate a unique student ID in format 0001, 0002, etc.
+     */
+    public static function generateStudentId(): string
+    {
+        // Get the highest student_id from the database
+        $lastStudent = self::whereNotNull('student_id')
+            ->orderBy('student_id', 'desc')
+            ->first();
+
+        if ($lastStudent) {
+            // Extract the numeric part and increment
+            $lastNumber = (int) $lastStudent->student_id;
+            $nextNumber = $lastNumber + 1;
+        } else {
+            // Start from 1 if no students exist
+            $nextNumber = 1;
+        }
+
+        // Format as 4-digit number with leading zeros
+        return str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+    }
 
     public function campaign(): BelongsTo
     {

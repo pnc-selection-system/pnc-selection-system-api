@@ -2,30 +2,30 @@
 
 namespace App\Models;
 
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Validator as ValidatorFacade;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssessmentForm extends Model
 {
     protected $fillable = [
         'campaign_id',
         'name',
+        'pass_threshold',
         'schema',
         'pass_threshold',
     ];
 
     protected $casts = [
         'schema' => 'array',
+        'pass_threshold' => 'integer',
     ];
 
-    public function campaign(): BelongsTo
+    public function questions(): HasMany
     {
-        return $this->belongsTo(SelectCampaing::class, 'campaign_id');
+        return $this->hasMany(AssessmentQuestion::class, 'assessment_form_id');
     }
 
-    public function fields(): array
+    public function responses(): HasMany
     {
         return $this->schema['fields'] ?? [];
     }

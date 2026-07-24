@@ -17,6 +17,7 @@ class ImportCandidateServices
      * Known database column names mapped to common CSV header variations.
      */
     private const HEADER_ALIASES = [
+        'student_id'    => ['student id', 'student_id', 'studentid', 'id', 'student number', 'student no'],
         'first_name'    => ['first name', 'firstname', 'first_name', 'given name', 'givenname', 'fname', 'name'],
         'last_name'     => ['last name', 'lastname', 'last_name', 'surname', 'family name', 'familyname', 'lname'],
         'first_name_kh' => ['first name kh', 'firstname kh', 'first_name_kh', 'khmer first name', 'khmer given name'],
@@ -309,7 +310,12 @@ class ImportCandidateServices
                 }
 
                 try {
-                    Candidate::create($candidateData);
+                    // Generate student_id if not provided
+                    if (empty($candidateData['student_id'])) {
+                        $candidateData['student_id'] = Cadidate::generateStudentId();
+                    }
+                    
+                    Cadidate::create($candidateData);
                     $importedCount++;
                 } catch (Exception $e) {
                     $errors[] = "Row {$rowNumber}: {$e->getMessage()}";

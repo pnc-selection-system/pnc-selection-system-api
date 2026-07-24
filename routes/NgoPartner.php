@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\NgoPartner\CommunicationLogController;
 use App\Http\Controllers\Api\NgoPartner\ContactPersonController;
 use App\Http\Controllers\Api\NgoPartner\NgoPartnerController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,10 @@ Route::middleware('jwt.auth')->group(function () {
     // Contact persons sub-resource
     Route::apiResource('ngo-partners.contact-persons', ContactPersonController::class)
         ->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // Communication logs sub-resource
+    Route::apiResource('ngo-partners.communication-logs', CommunicationLogController::class)
+        ->only(['index', 'store']);
 
     // Reporting: list candidates linked to an NGO
     Route::get('ngo-partners/{ngo_partner}/candidates', [NgoPartnerController::class, 'candidates']);

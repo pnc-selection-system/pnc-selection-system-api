@@ -52,11 +52,11 @@ class ScoringServices
                 wrongCount:      (int) ($entry['wrong_count'] ?? 0),
                 unansweredCount: (int) ($entry['unanswered_count'] ?? 0),
                 maxScore:        (float) $subject->max_score,
-                deductionRules:  $subject->deduction_rules ?? []
+                deductionRules:  []
             );
 
             $subjectThreshold = $thresholds->get($subjectId);
-            $passScore = $subjectThreshold ? (float) $subjectThreshold->pass_score : null;
+            $passScore = $subjectThreshold ? (float) $subjectThreshold->per_subject_min : null;
             $passed = ScoringEngine::determinePassFail(
                 $calculated['final_score'],
                 $passScore
@@ -101,7 +101,7 @@ class ScoringServices
         $overall = ScoringEngine::calculateOverallScore($overallInput);
         $overallPassed = ScoringEngine::determinePassFail(
             $overall['overall_percentage'],
-            $overallThreshold ? (float) $overallThreshold->pass_score : null
+            $overallThreshold ? (float) $overallThreshold->overall_pass_mark : null
         );
 
         // Store overall result
