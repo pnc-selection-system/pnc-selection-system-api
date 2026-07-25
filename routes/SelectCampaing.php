@@ -6,4 +6,6 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('jwt.auth')->group(function () {
     Route::apiResource('selection-campaigns', SelectCampaingController::class)
         ->parameters(['selection-campaigns' => 'selectCampaing']);
+
+    Route::get('selection-campaigns/{selectCampaing}/provinces', [SelectCampaingController::class, 'provinces']);
 });

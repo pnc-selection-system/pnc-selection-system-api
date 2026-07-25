@@ -49,6 +49,8 @@ class InfoSession extends Model
 
     /**
      * Override toArray to replace province/district/commune/village objects with just their name strings.
+     * If the relationship is not eager-loaded but a foreign key exists, it lazy-loads the name.
+     * Always includes the key (even as null) so the frontend never sees an undefined property.
      */
     public function toArray(): array
     {
@@ -56,7 +58,11 @@ class InfoSession extends Model
 
         foreach (['province', 'district', 'commune', 'village'] as $rel) {
             if ($this->relationLoaded($rel)) {
-                $data[$rel] = $this->getRelation($rel)->name ?? null;
+                $data[$rel] = $this->getRelation($rel)?->name;
+            } elseif ($this->{$rel . '_id'}) {
+                $data[$rel] = $this->{$rel}?->name;
+            } else {
+                $data[$rel] = null;
             }
         }
 

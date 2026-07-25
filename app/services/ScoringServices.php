@@ -2,7 +2,7 @@
 
 namespace Services;
 
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use App\Models\ExamOverallResult;
 use App\Models\ExamResult;
 use App\Models\ExamSubject;
@@ -134,7 +134,7 @@ class ScoringServices
      */
     public function recalculateCampaign(int $campaignId): array
     {
-        $candidates = Cadidate::where('campaign_id', $campaignId)->get();
+        $candidates = Candidate::where('campaign_id', $campaignId)->get();
         $results = [];
 
         foreach ($candidates as $candidate) {

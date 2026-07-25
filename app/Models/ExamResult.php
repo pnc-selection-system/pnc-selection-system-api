@@ -42,7 +42,7 @@ class ExamResult extends Model
 
     public function candidate(): BelongsTo
     {
-        return $this->belongsTo(Cadidate::class, 'candidate_id');
+        return $this->belongsTo(Candidate::class, 'candidate_id');
     }
 
     public function subject(): BelongsTo

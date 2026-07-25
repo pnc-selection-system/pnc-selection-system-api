@@ -24,9 +24,6 @@ class SelectCampaingRepository
 
     public function create(array $data): SelectCampaing
     {
-<<<<<<< HEAD
-        return SelectCampaing::create($data); 
-=======
         $provinceIds = $data['province_ids'] ?? [];
         unset($data['province_ids']);
 
@@ -42,7 +39,6 @@ class SelectCampaingRepository
         $selectCampaing->load('provinces:id,name');
 
         return $selectCampaing;
->>>>>>> 32949326a3c899c0987e8e0bf1925d80e70b7891
     }
 
     public function find(SelectCampaing $selectCampaing): SelectCampaing
@@ -72,11 +68,7 @@ class SelectCampaingRepository
 
     public function delete(SelectCampaing $selectCampaing): void
     {
-<<<<<<< HEAD
-        $selectCampaing->delete($selectCampaing);
-=======
         $selectCampaing->provinces()->detach();
         $selectCampaing->delete();
->>>>>>> 32949326a3c899c0987e8e0bf1925d80e70b7891
     }
 }

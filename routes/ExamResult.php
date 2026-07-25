@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\ExamResult\ResultsController;
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware('jwt.auth')->group(function () {
     // Upload file for exam result import
     Route::post('/exam-results/import/upload', [ExamResultImportController::class, 'upload']);
     

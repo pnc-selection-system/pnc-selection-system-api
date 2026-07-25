@@ -39,7 +39,8 @@ class ImportCandidateServices
         \Illuminate\Http\UploadedFile $file,
         int $campaignId,
         int $provinceId,
-        int $userId
+        int $userId,
+        ?int $ngoId = null
     ): array {
         // Store the file
         $storedPath = $file->store('imports/candidates');
@@ -162,6 +163,7 @@ class ImportCandidateServices
         $importFile = ImportFile::create([
             'campaign_id'       => $campaignId,
             'province_id'       => $provinceId,
+            'ngo_id'            => $ngoId,
             'original_filename' => $originalName,
             'stored_path'       => $storedPath,
             'file_type'         => in_array($extension, ['xlsx', 'xls']) ? $extension : 'csv',
@@ -268,9 +270,14 @@ class ImportCandidateServices
                 $candidateData[$dbField] = $value;
             }
 
-            // Campaign and province are always set from the import context (not from file)
+            // Campaign, province, and NGO are always set from the import context (not from file)
             $candidateData['campaign_id'] = $campaignId;
             $candidateData['province_id'] = $provinceId;
+
+            // Apply the import-level NGO if one was selected and no CSV column mapped it
+            if (! empty($importFile->ngo_id) && empty($candidateData['ngo_id'])) {
+                $candidateData['ngo_id'] = $importFile->ngo_id;
+            }
 
                 // Ensure required fields
                 if (empty($candidateData['first_name'])) {
@@ -312,10 +319,10 @@ class ImportCandidateServices
                 try {
                     // Generate student_id if not provided
                     if (empty($candidateData['student_id'])) {
-                        $candidateData['student_id'] = Cadidate::generateStudentId();
+                        $candidateData['student_id'] = Candidate::generateStudentId();
                     }
                     
-                    Cadidate::create($candidateData);
+                    Candidate::create($candidateData);
                     $importedCount++;
                 } catch (Exception $e) {
                     $errors[] = "Row {$rowNumber}: {$e->getMessage()}";

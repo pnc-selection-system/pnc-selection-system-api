@@ -2,7 +2,7 @@
 
 namespace Services;
 
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use App\Models\ExamOverallResult;
 use App\Models\ExamResult;
 use App\Models\ExamSubject;
@@ -256,7 +256,7 @@ class ResultsService
                 ->distinct('candidate_id')
                 ->pluck('candidate_id');
 
-            $candidates = Cadidate::whereIn('id', $candidateIds)->get()->keyBy('id');
+            $candidates = Candidate::whereIn('id', $candidateIds)->get()->keyBy('id');
             $totalWeight = $subjects->sum('weight');
 
             $candidateScores = [];

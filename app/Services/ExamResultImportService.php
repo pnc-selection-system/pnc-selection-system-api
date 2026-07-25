@@ -2,7 +2,7 @@
 
 namespace Services;
 
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use App\Models\ExamOverallResult;
 use App\Models\ExamResult;
 use App\Models\ExamSubject;
@@ -120,7 +120,7 @@ class ExamResultImportService
                 $rowValidationErrors[] = 'Student ID is required';
             } else {
                 $studentId = trim((string) $rowData['student_id']);
-                $candidate = Cadidate::where('student_id', $studentId)->first();
+                $candidate = Candidate::where('student_id', $studentId)->first();
                 if (! $candidate) {
                     $rowValidationErrors[] = "Student ID '{$studentId}' not found in candidate list";
                 } elseif ((int) $candidate->campaign_id !== $campaignId) {
@@ -281,7 +281,7 @@ class ExamResultImportService
                 ];
             } else {
                 // Match against candidate list
-                $candidate = Cadidate::where('student_id', $studentId)->first();
+                $candidate = Candidate::where('student_id', $studentId)->first();
                 if (! $candidate) {
                     $errors[] = [
                         'row'     => $rowNumber,
@@ -448,7 +448,7 @@ class ExamResultImportService
                 }
 
                 // Find candidate by student_id
-                $candidate = Cadidate::where('student_id', $studentId)->first();
+                $candidate = Candidate::where('student_id', $studentId)->first();
                 if (! $candidate) {
                     $errors[] = "Row {$rowNumber}: Student ID '{$studentId}' not found in candidate list.";
                     continue;

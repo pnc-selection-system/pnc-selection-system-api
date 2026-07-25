@@ -35,7 +35,7 @@ class SelectCampaing extends Model
 
     public function candidates()
     {
-        return $this->hasMany(Cadidate::class, 'campaign_id');
+        return $this->hasMany(Candidate::class, 'campaign_id');
     }
 
     public function examResults()

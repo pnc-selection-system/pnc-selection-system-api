@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         // Get the highest existing student_id to continue the sequence
-        $maxStudent = Cadidate::whereNotNull('student_id')
+        $maxStudent = Candidate::whereNotNull('student_id')
             ->orderByRaw('CAST(student_id AS UNSIGNED) DESC')
             ->first();
 
@@ -18,7 +18,7 @@ return new class extends Migration
             : 1;
 
         // Backfill all candidates with NULL student_id, ordered by id ascending
-        $candidates = Cadidate::whereNull('student_id')
+        $candidates = Candidate::whereNull('student_id')
             ->orderBy('id')
             ->get();
 

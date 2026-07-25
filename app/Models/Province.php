@@ -29,6 +29,6 @@ class Province extends Model
 
     public function candidates(): HasMany
     {
-        return $this->hasMany(Cadidate::class, 'province_id');
+        return $this->hasMany(Candidate::class, 'province_id');
     }
 }

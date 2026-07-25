@@ -51,4 +51,11 @@ class SelectCampaingController extends Controller
 
         return ApiResponse::ok('Selection campaign deleted successfully');
     }
+
+    public function provinces(SelectCampaing $selectCampaing): JsonResponse
+    {
+        $selectCampaing->load('provinces:id,name');
+
+        return ApiResponse::success($selectCampaing->provinces, 'Campaign provinces retrieved successfully');
+    }
 }

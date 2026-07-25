@@ -31,7 +31,7 @@ class ResultSnapshot extends Model
 
     public function candidate(): BelongsTo
     {
-        return $this->belongsTo(Cadidate::class);
+        return $this->belongsTo(Candidate::class);
     }
 
     public function subject(): BelongsTo

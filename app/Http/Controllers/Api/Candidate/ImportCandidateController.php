@@ -26,7 +26,8 @@ class ImportCandidateController extends Controller
                 $request->file('file'),
                 (int) $request->input('campaign_id'),
                 (int) $request->input('province_id'),
-                (int) $request->user()->id
+                (int) $request->user()->id,
+                $request->input('ngo_id') ? (int) $request->input('ngo_id') : null
             );
 
             return ApiResponse::success($result, 'File parsed successfully. Review the columns and mapping before confirming.');

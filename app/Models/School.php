@@ -24,13 +24,8 @@ class School extends Model
 
     public function candidates()
     {
-<<<<<<< HEAD
         return $this->hasMany(Candidate::class);
     }
-=======
-        return $this->hasMany(Cadidate::class);
-
->>>>>>> 32949326a3c899c0987e8e0bf1925d80e70b7891
 
     public function infoSessions()
     {
