@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('jwt.auth')->group(function () {
     // Candidate CRUD
+    Route::get('candidates/stats', [CandidateController::class, 'stats']);
     Route::apiResource('candidates', CandidateController::class);
 
     // Candidate import from CSV/Excel

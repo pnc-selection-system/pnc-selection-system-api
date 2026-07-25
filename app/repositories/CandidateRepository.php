@@ -7,6 +7,25 @@ use Illuminate\Database\Eloquent\Collection;
 
 class CandidateRepository
 {
+    public function stats(): array
+    {
+        $total = Candidate::count();
+        $registered = Candidate::where('status', 'Register')->count();
+        $assessed = Candidate::where('status', 'Assessed')->count();
+        $examPassed = Candidate::where('status', 'Exam Passed')->count();
+        $interestFail = Candidate::where('status', 'Interest Assessment Fail')->count();
+        $investigating = Candidate::where('status', 'Investigating')->count();
+
+        return [
+            'total' => $total,
+            'registered' => $registered,
+            'assessed' => $assessed,
+            'exam_passed' => $examPassed,
+            'interest_fail' => $interestFail,
+            'investigating' => $investigating,
+        ];
+    }
+
     public function list(array $filters = []): Collection
     {
         $query = Candidate::query();

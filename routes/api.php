@@ -19,3 +19,4 @@ require __DIR__.'/Commune.php';
 require __DIR__.'/Candidate.php';
 require __DIR__.'/infoSession.php';
 require __DIR__.'/HomeInvestigation.php';
+require __DIR__.'/VotingRound.php';

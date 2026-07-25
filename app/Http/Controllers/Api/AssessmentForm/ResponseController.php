@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api\AssessmentForm;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentForm;
-use App\Models\AssessmentRespone;
+use App\Models\AssessmentResponse;
+use App\Models\Candidate;
+use App\Models\CandidateStatusHistory;
+use App\Enums\CandidateStatus;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,7 +22,7 @@ class ResponseController extends Controller
     {
         $search = $request->input('search', '');
 
-        $responses = AssessmentRespone::where('form_id', $assessmentForm->id)
+        $responses = AssessmentResponse::where('form_id', $assessmentForm->id)
             ->when($search, function ($query, $search) {
                 $query->whereHas('candidate', function ($q) use ($search) {
                     $q->where('first_name', 'like', "%{$search}%")
@@ -97,13 +100,32 @@ class ResponseController extends Controller
         $passThreshold = (float) ($assessmentForm->pass_threshold ?? 60);
         $passed = $score >= $passThreshold;
 
-        // Persist response to database (passed column requires migration to be run)
-        $response = AssessmentRespone::create([
+        // Persist response to database
+        $response = AssessmentResponse::create([
             'candidate_id' => (int) $request->input('candidate_id'),
             'form_id' => $assessmentForm->id,
             'answers' => $answers,
             'total_score' => $score,
+            'passed' => $passed,
         ]);
+
+        // Auto-update candidate status based on pass/fail
+        $candidate = Candidate::find((int) $request->input('candidate_id'));
+        if ($candidate) {
+            $newStatus = $passed
+                ? CandidateStatus::Assessed->value
+                : CandidateStatus::InterestAssessmentFail->value;
+
+            $candidate->update(['status' => $newStatus]);
+
+            // Record status change in history
+            CandidateStatusHistory::create([
+                'candidate_id' => $candidate->id,
+                'status' => $newStatus,
+                'changed_by' => $request->user()?->id,
+                'changed_at' => now(),
+            ]);
+        }
 
         $responseData = [
             'id' => $response->id,
@@ -113,6 +135,7 @@ class ResponseController extends Controller
             'total_score' => $score,
             'pass_threshold' => $passThreshold,
             'passed' => $passed,
+            'candidate_status' => $candidate?->status ?? null,
             'submitted_at' => $response->created_at,
         ];
 

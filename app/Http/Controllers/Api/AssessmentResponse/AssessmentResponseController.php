@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api\AssessmentResponse;
 
+use App\Enums\CandidateStatus;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentForm;
 use App\Models\AssessmentResponse;
 use App\Models\Candidate;
+use App\Models\CandidateStatusHistory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -108,19 +110,42 @@ class AssessmentResponseController extends Controller
         // Score the response
         $totalScore = $assessmentForm->scoreResponse($answerData);
 
+        // Use the form's pass_threshold; fall back to 60 if not set
+        $passThreshold = (float) ($assessmentForm->pass_threshold ?? self::DEFAULT_PASS_THRESHOLD);
+        $passed = $totalScore >= $passThreshold;
+
         // Store the response
         $response = AssessmentResponse::create([
             'candidate_id' => $validated['candidate_id'],
             'form_id' => $assessmentForm->id,
             'answers' => $validated['answers'],
             'total_score' => $totalScore,
+            'passed' => $passed,
         ]);
+
+        // Auto-update candidate status based on pass/fail
+        if ($candidate) {
+            $newStatus = $passed
+                ? CandidateStatus::Assessed->value
+                : CandidateStatus::InterestAssessmentFail->value;
+
+            $candidate->update(['status' => $newStatus]);
+
+            // Record status change in history
+            CandidateStatusHistory::create([
+                'candidate_id' => $candidate->id,
+                'status' => $newStatus,
+                'changed_by' => $request->user()?->id,
+                'changed_at' => now(),
+            ]);
+        }
 
         return ApiResponse::created([
             'id' => $response->id,
             'candidate_id' => $response->candidate_id,
             'total_score' => $totalScore,
-            'passed' => $totalScore >= self::DEFAULT_PASS_THRESHOLD,
+            'passed' => $passed,
+            'candidate_status' => $candidate->status,
             'form_name' => $assessmentForm->name,
         ], 'Assessment submitted successfully');
     }

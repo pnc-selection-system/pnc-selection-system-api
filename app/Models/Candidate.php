@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Candidate extends Model
 {
@@ -45,5 +46,10 @@ class Candidate extends Model
     public function ngoPartner()
     {
         return $this->belongsTo(NgoPartner::class, 'ngo_id');
+    }
+
+    public function votingRounds(): BelongsToMany
+    {
+        return $this->belongsToMany(VotingRound::class, 'voting_round_candidates', 'candidate_id', 'voting_round_id');
     }
 }

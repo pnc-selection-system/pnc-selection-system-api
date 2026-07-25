@@ -49,4 +49,11 @@ class CandidateController extends Controller
 
         return ApiResponse::ok('Candidate deleted successfully');
     }
+
+    public function stats(): JsonResponse
+    {
+        $stats = $this->candidateService->stats();
+
+        return ApiResponse::success($stats, 'Candidate stats retrieved successfully');
+    }
 }

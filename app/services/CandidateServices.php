@@ -9,6 +9,11 @@ class CandidateServices
 {
     public function __construct(protected CandidateRepository $candidateRepository) {}
 
+    public function stats(): array
+    {
+        return $this->candidateRepository->stats();
+    }
+
     public function list(array $filters = [])
     {
         return $this->candidateRepository->list($filters);
