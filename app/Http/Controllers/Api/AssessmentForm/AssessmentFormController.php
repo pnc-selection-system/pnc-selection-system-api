@@ -28,7 +28,7 @@ class AssessmentFormController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'campaign_id' => 'required|integer|exists:campaigns,id',
+            'campaign_id' => 'required|integer|exists:selection_campaigns,id',
             'name' => 'required|string|max:255',
             'pass_threshold' => 'nullable|integer|min:0|max:100',
             'schema' => 'nullable|array',

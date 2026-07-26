@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Validator;
 
 class AssessmentForm extends Model
 {
@@ -27,7 +28,7 @@ class AssessmentForm extends Model
 
     public function validateResponse(array $data): Validator
     {
-        return ValidatorFacade::make($data, $this->responseRules());
+        return Validator::make($data, $this->responseRules());
     }
 
     public function scoreResponse(array $data): float
@@ -122,5 +123,10 @@ class AssessmentForm extends Model
         }
 
         return max(0.0, min(1.0, $normalized));
+    }
+
+    public function campaign()
+    {
+        return $this->belongsTo(SelectCampaing::class);
     }
 }

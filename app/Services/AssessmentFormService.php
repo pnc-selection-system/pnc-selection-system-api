@@ -24,7 +24,7 @@ class AssessmentFormService
     public function store(array $data)
     {
         return DB::transaction(function () use ($data) {
-            return $this->repository->store($data);
+            return $this->repository->create($data);
         });
     }
 

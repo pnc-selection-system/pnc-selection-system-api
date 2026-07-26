@@ -72,6 +72,7 @@ class AssessmentFormRepository
     public function update(int $id, array $data)
     {
         $this->ensureFormTableSchema();
+        $assessmentForm = AssessmentForm::findOrFail($id);
         $assessmentForm->update($data);
         return $assessmentForm;
     }
