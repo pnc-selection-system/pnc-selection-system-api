@@ -48,6 +48,15 @@ class UserRoleServices
         });
     }
 
+    private function roleKeyMap(): array
+    {
+        return [
+            'Admin'   => 'ADM',
+            'Manager' => 'MGR',
+            'Officer' => 'OFF',
+        ];
+    }
+
     public function roles()
     {
         return Role::select('id', 'name')->orderBy('name')->get();
@@ -60,24 +69,20 @@ class UserRoleServices
      * modifies permission assignments (which clears the cache).
      *
      * Shape:
-     *   rows: [{ capability: string, module: string, access: { [roleName]: bool } }]
+     *   rows: [{ capability, name, module, access: { ADM: bool, MGR: bool, OFF: bool } }]
+     *   roles: [{ id, name, key }]
      */
     public function permissionMatrix(): array
     {
         return Cache::remember('permission_matrix', 3600, function () {
             $roles = $this->roles();
             $roleNames = $roles->pluck('name')->toArray();
+            $roleKeyMap = $this->roleKeyMap();
 
             $permissions = Permission::with('roles:id,name')
                 ->orderBy('module')
                 ->orderBy('name')
                 ->get();
-
-            $roleKeyMap = [
-                'Admin'   => 'ADM',
-                'Manager' => 'MGR',
-                'Officer' => 'OFF',
-            ];
 
             $rows = $permissions->map(function (Permission $perm) use ($roleNames, $roleKeyMap) {
                 $access = [];
@@ -95,8 +100,32 @@ class UserRoleServices
                 ];
             });
 
-            return ['rows' => $rows->toArray()];
+            $roleDefs = $roles->map(fn($r) => [
+                'id'   => $r->id,
+                'name' => $r->name,
+                'key'  => $roleKeyMap[$r->name] ?? $r->name,
+            ])->values()->toArray();
+
+            return [
+                'rows'  => $rows->toArray(),
+                'roles' => $roleDefs,
+            ];
         });
+    }
+
+    /** Toggle a single permission assignment for a role. */
+    public function togglePermission(string $permissionName, string $roleName, bool $granted): void
+    {
+        $permission = Permission::where('name', $permissionName)->firstOrFail();
+        $role       = Role::where('name', $roleName)->firstOrFail();
+
+        if ($granted) {
+            $role->permissions()->syncWithoutDetaching([$permission->id]);
+        } else {
+            $role->permissions()->detach($permission->id);
+        }
+
+        $this->forgetPermissionCache();
     }
 
     /**

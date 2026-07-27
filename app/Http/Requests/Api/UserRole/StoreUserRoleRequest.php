@@ -26,8 +26,9 @@ class StoreUserRoleRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // Allow frontend to send 'role' (string name) and resolve to role_id
-        if ($this->filled('role') && ! $this->has('role_id')) {
-            $role = \App\Models\Role::where('name', $this->role)->first();
+        // Case-insensitive match so 'admin' / 'Admin' both work
+        if ($this->filled('role') && ! $this->filled('role_id')) {
+            $role = \App\Models\Role::whereRaw('LOWER(name) = ?', [strtolower($this->role)])->first();
             if ($role) {
                 $this->merge(['role_id' => $role->id]);
             }

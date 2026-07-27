@@ -82,4 +82,24 @@ class UserRoleController extends Controller
 
         return ApiResponse::success($matrix, 'Permission matrix retrieved successfully');
     }
+
+    /**
+     * Toggle a permission assignment for a role.
+     */
+    public function togglePermission(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'permission_name' => 'required|string',
+            'role_name'       => 'required|string',
+            'granted'         => 'required|boolean',
+        ]);
+
+        $this->service->togglePermission(
+            $validated['permission_name'],
+            $validated['role_name'],
+            $validated['granted'],
+        );
+
+        return ApiResponse::success(null, 'Permission updated successfully');
+    }
 }
