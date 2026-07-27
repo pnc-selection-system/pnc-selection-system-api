@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('result_snapshots')) {
+            return;
+        }
+
         Schema::create('result_snapshots', function (Blueprint $table) {
             $table->id();
             $table->foreignId('campaign_id')

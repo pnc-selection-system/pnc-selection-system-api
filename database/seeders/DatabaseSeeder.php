@@ -22,6 +22,10 @@ class DatabaseSeeder extends Seeder
             DistrictSeeder::class,
             CommuneSeeder::class,
             VillageSeeder::class,
+            RoleSeeder::class,
+            UserSeeder::class,
+            SelectionCampaignSeeder::class,
+            VotingRoundSeeder::class,
         ]);
     }
 }

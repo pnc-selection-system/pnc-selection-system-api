@@ -41,6 +41,6 @@ class SchoolRepository
 
     public function delete(School $school): void
     {
-        $school->delete();
+        $school->delete($school);
     }
 }

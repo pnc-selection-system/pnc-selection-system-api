@@ -4,8 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class Cadidate extends Model
+class Candidate extends Model
 {
     protected $table = 'candidates';
 
@@ -21,6 +22,7 @@ class Cadidate extends Model
         'gender',
         'dob',
         'phone',
+        'photo_url',
         'status',
     ];
 
@@ -41,5 +43,14 @@ class Cadidate extends Model
     public function referringNgo(): BelongsTo
     {
         return $this->belongsTo(NgoPartner::class, 'ngo_id');
+    }
+    public function ngoPartner()
+    {
+        return $this->belongsTo(NgoPartner::class, 'ngo_id');
+    }
+
+    public function homeInvestigation(): HasOne
+    {
+        return $this->hasOne(HomeInvestigation::class, 'candidate_id');
     }
 }

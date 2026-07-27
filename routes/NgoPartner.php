@@ -4,14 +4,8 @@ use App\Http\Controllers\Api\NgoPartner\ContactPersonController;
 use App\Http\Controllers\Api\NgoPartner\NgoPartnerController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:api')->group(function () {
-    // NGO Partners
-    Route::get('/ngo-partners',                             [NgoPartnerController::class, 'index'])     ->middleware('permission:ngos.view');
-    Route::post('/ngo-partners',                            [NgoPartnerController::class, 'store'])     ->middleware('permission:ngos.create');
-    Route::get('/ngo-partners/{ngo_partner}',               [NgoPartnerController::class, 'show'])      ->middleware('permission:ngos.view');
-    Route::put('/ngo-partners/{ngo_partner}',               [NgoPartnerController::class, 'update'])    ->middleware('permission:ngos.edit');
-    Route::patch('/ngo-partners/{ngo_partner}',            [NgoPartnerController::class, 'update'])    ->middleware('permission:ngos.edit');
-    Route::delete('/ngo-partners/{ngo_partner}',            [NgoPartnerController::class, 'destroy'])   ->middleware('permission:ngos.delete');
+Route::middleware('jwt.auth')->group(function () {
+    Route::apiResource('ngo-partners', NgoPartnerController::class);
 
     // Contact persons sub-resource (same permissions as parent NGO)
     Route::get('/ngo-partners/{ngo_partner}/contact-persons',                         [ContactPersonController::class, 'index'])   ->middleware('permission:ngos.view');

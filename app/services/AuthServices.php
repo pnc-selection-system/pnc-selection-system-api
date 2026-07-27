@@ -4,7 +4,8 @@ namespace Services;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
-use Repositories\AuthRepository;
+use Illuminate\Support\Facades\Hash;
+use App\Repositories\AuthRepository;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -56,7 +57,7 @@ class AuthServices
             'message' => 'Login successful',
             'status'  => 200,
             'data'    => [
-                'user'         => [
+                'user'          => [
                     'id'    => $user->id,
                     'name'  => $user->name,
                     'email' => $user->email,
@@ -68,6 +69,14 @@ class AuthServices
                 'permissions'  => $permissions,
             ],
         ];
+    }
+
+    protected function generateRefreshToken($user): string
+    {
+        $refreshTtl = (int) config('jwt.refresh_ttl', 20160);
+
+        return JWTAuth::claims(['type' => 'refresh', 'exp' => now()->addMinutes($refreshTtl)->timestamp])
+            ->fromUser($user);
     }
 
     public function register(array $data): array
@@ -121,6 +130,46 @@ class AuthServices
                 'success' => false,
                 'message' => 'Failed to logout. Token may be expired or invalid.',
                 'status'  => 500,
+            ];
+        }
+    }
+
+    public function refresh(string $refreshToken): array
+    {
+        try {
+            $payload = JWTAuth::setToken($refreshToken)->getPayload();
+
+            if (($payload->get('type') ?? '') !== 'refresh') {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid refresh token',
+                    'status'  => 401,
+                ];
+            }
+
+            $user = \App\Models\User::findOrFail($payload->get('sub'));
+
+            JWTAuth::setToken($refreshToken)->invalidate();
+
+            $accessToken  = JWTAuth::fromUser($user);
+            $refreshToken = $this->generateRefreshToken($user);
+
+            return [
+                'success' => true,
+                'message' => 'Token refreshed successfully',
+                'status'  => 200,
+                'data'    => [
+                    'access_token'  => $accessToken,
+                    'refresh_token' => $refreshToken,
+                    'token_type'    => 'Bearer',
+                    'expires_in'    => (int) config('jwt.ttl') * 60,
+                ],
+            ];
+        } catch (JWTException $e) {
+            return [
+                'success' => false,
+                'message' => 'Token cannot be refreshed',
+                'status'  => 401,
             ];
         }
     }

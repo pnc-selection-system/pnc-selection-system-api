@@ -24,14 +24,13 @@ class SelectCampaingRepository
 
     public function create(array $data): SelectCampaing
     {
-        return SelectCampaing::create($data);
+        return SelectCampaing::create($data); 
     }
 
     public function find(SelectCampaing $selectCampaing): SelectCampaing
     {
         return $selectCampaing;
     }
-
     public function update(SelectCampaing $selectCampaing, array $data): SelectCampaing
     {
         $selectCampaing->update($data);
@@ -42,6 +41,6 @@ class SelectCampaingRepository
 
     public function delete(SelectCampaing $selectCampaing): void
     {
-        $selectCampaing->delete();
+        $selectCampaing->delete($selectCampaing);
     }
 }

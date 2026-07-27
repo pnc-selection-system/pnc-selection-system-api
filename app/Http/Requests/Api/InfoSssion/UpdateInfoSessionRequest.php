@@ -34,7 +34,7 @@ class UpdateInfoSessionRequest extends FormRequest
             'expected_attendance' => 'sometimes|integer|min:1',
             'attendance_count'    => 'nullable|integer|min:0',
             'hosts'               => 'nullable|array',
-            'hosts.*.host_name'   => 'required_with:hosts|string|max:150',
+            'hosts.*.host_by'   => 'required_with:hosts|string|max:150',
             'venue'                => 'nullable|string|max:200',
             'partner_type'         => 'nullable|string|in:School,Officer,Alumni,NGO',
             'partner_name'         => 'nullable|string|max:150',

@@ -11,6 +11,7 @@ class StoreAssessmentFormRequest extends FormRequest
         return [
             'campaign_id' => 'required|integer|exists:selection_campaigns,id',
             'name' => 'required|string|max:100',
+            'pass_threshold' => 'sometimes|numeric|min:0|max:100',
             'schema' => 'required|array',
             'schema.fields' => 'required|array|min:1',
             'schema.fields.*.key' => 'required|string|alpha_dash|distinct',
@@ -25,6 +26,7 @@ class StoreAssessmentFormRequest extends FormRequest
             'schema.fields.*.rules.regex' => 'sometimes|string',
             'schema.fields.*.rules.in' => 'sometimes|array',
             'schema.fields.*.rules.in.*' => 'sometimes|string',
+            'schema.fields.*.point_map' => 'sometimes|array',
             'schema.fields.*.weight' => 'required|numeric|min:0|max:100',
         ];
     }

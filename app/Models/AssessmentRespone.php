@@ -1,10 +1,2 @@
 <?php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Model;
-
-class AssessmentRespone extends Model
-{
-    //
-}
+// This file is intentionally empty. The correct file is AssessmentResponse.php.
