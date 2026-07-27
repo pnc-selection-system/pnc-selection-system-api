@@ -10,6 +10,7 @@ class ImportFile extends Model
     protected $fillable = [
         'campaign_id',
         'province_id',
+        'ngo_id',
         'original_filename',
         'stored_path',
         'file_type',

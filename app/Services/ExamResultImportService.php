@@ -7,6 +7,7 @@ use App\Models\ExamOverallResult;
 use App\Models\ExamResult;
 use App\Models\ExamSubject;
 use App\Models\ExamThreshold;
+use App\Models\ImportExamResult;
 use App\Models\ImportFile;
 use App\Models\Rule;
 use App\Services\ScoringEngine;
@@ -537,6 +538,20 @@ class ExamResultImportService
                 'status'        => count($errors) > 0 ? 'error' : 'imported',
                 'error_message' => count($errors) > 0 ? implode('; ', array_slice($errors, 0, 50)) : null,
                 'row_count'     => $importedCount,
+            ]);
+
+            // Create import_exam_result record to track this import
+            ImportExamResult::create([
+                'import_file_id' => $importFileId,
+                'campaign_id'    => $campaignId,
+                'subject_id'     => $subjectId,
+                'imported_by'    => $importFile->imported_by,
+                'total_rows'     => count($dataRows),
+                'imported_rows'  => $importedCount,
+                'errored_rows'   => count($errors),
+                'column_mapping' => $columnMapping,
+                'status'         => count($errors) > 0 ? 'error' : 'imported',
+                'error_message'  => count($errors) > 0 ? implode('; ', array_slice($errors, 0, 50)) : null,
             ]);
 
             DB::commit();

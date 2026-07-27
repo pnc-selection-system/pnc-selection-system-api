@@ -26,7 +26,56 @@ class AssessmentForm extends Model
         return $this->hasMany(AssessmentQuestion::class, 'assessment_form_id');
     }
 
-    public function validateResponse(array $data): Validator
+    /**
+     * Get the schema fields array.
+     */
+    public function fields(): array
+    {
+        $schema = $this->schema ?? [];
+        return $schema['fields'] ?? [];
+    }
+
+    /**
+     * Calculate the total weight of all fields.
+     */
+    public function totalWeight(): float
+    {
+        $total = 0.0;
+        foreach ($this->fields() as $field) {
+            $total += (float) ($field['weight'] ?? 1);
+        }
+        return $total;
+    }
+
+    /**
+     * Generate validation rules from schema fields.
+     */
+    public function responseRules(): array
+    {
+        $rules = [];
+        foreach ($this->fields() as $field) {
+            $key = $field['key'] ?? null;
+            if ($key === null) {
+                continue;
+            }
+
+            $fieldRules = ['required'];
+            $type = $field['type'] ?? 'text';
+
+            if ($type === 'rating') {
+                $fieldRules[] = 'numeric';
+                $fieldRules[] = 'min:1';
+                $fieldRules[] = 'max:5';
+            } elseif ($type === 'number') {
+                $fieldRules[] = 'numeric';
+            }
+
+            $rules[$key] = $fieldRules;
+        }
+        return $rules;
+    }
+
+    public function validateResponse(array $data): \Illuminate\Validation\Validator
     {
         return Validator::make($data, $this->responseRules());
     }

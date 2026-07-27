@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Api\AssessmentForm;
 
+use App\Enums\CandidateStatus;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentForm;
 use App\Models\AssessmentRespone;
+use App\Models\Cadidate;
+use App\Repositories\CandidateRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ResponseController extends Controller
 {
@@ -97,13 +101,34 @@ class ResponseController extends Controller
         $passThreshold = (float) ($assessmentForm->pass_threshold ?? 60);
         $passed = $score >= $passThreshold;
 
-        // Persist response to database (passed column requires migration to be run)
+        // Persist response to database
         $response = AssessmentRespone::create([
             'candidate_id' => (int) $request->input('candidate_id'),
             'form_id' => $assessmentForm->id,
             'answers' => $answers,
             'total_score' => $score,
+            'passed' => $passed,
+            'submitted_by' => Auth::id(),
         ]);
+
+        // Update candidate status based on assessment result and record history
+        $candidate = Cadidate::find((int) $request->input('candidate_id'));
+        if ($candidate) {
+            $newStatus = $passed
+                ? CandidateStatus::PassInterest->value
+                : CandidateStatus::FailInterest->value;
+
+            $candidate->update([
+                'status' => $newStatus,
+            ]);
+
+            // Record status change in history
+            app(CandidateRepository::class)->recordStatusHistory(
+                $candidate->id,
+                $newStatus,
+                Auth::id()
+            );
+        }
 
         $responseData = [
             'id' => $response->id,

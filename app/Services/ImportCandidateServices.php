@@ -39,7 +39,8 @@ class ImportCandidateServices
         \Illuminate\Http\UploadedFile $file,
         int $campaignId,
         int $provinceId,
-        int $userId
+        int $userId,
+        ?int $ngoId = null
     ): array {
         // Store the file
         $storedPath = $file->store('imports/candidates');
@@ -162,6 +163,7 @@ class ImportCandidateServices
         $importFile = ImportFile::create([
             'campaign_id'       => $campaignId,
             'province_id'       => $provinceId,
+            'ngo_id'            => $ngoId,
             'original_filename' => $originalName,
             'stored_path'       => $storedPath,
             'file_type'         => in_array($extension, ['xlsx', 'xls']) ? $extension : 'csv',
@@ -236,8 +238,13 @@ class ImportCandidateServices
                     'province_id' => $provinceId,
                 ];
 
+                // Apply the NGO from the import context (if selected)
+                if ($importFile->ngo_id) {
+                    $candidateData['ngo_id'] = $importFile->ngo_id;
+                }
+
                 // Protected fields that cannot be set via CSV column mapping
-            $protectedFields = ['id', 'campaign_id', 'province_id', 'created_at', 'updated_at'];
+            $protectedFields = ['id', 'campaign_id', 'province_id', 'ngo_id', 'created_at', 'updated_at'];
 
             // Map columns using user's mapping (skip protected fields)
             foreach ($columnMapping as $csvColIndex => $dbField) {

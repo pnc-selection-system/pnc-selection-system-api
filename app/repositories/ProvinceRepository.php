@@ -9,6 +9,14 @@ class ProvinceRepository
 {
     public function list(array $filters = []): Collection
     {
-        return Province::select('id', 'name')->orderBy('name')->get();
+        $query = Province::select('id', 'name')->orderBy('name');
+
+        if (!empty($filters['campaign_id'])) {
+            $query->whereHas('campaigns', function ($q) use ($filters) {
+                $q->where('id', $filters['campaign_id']);
+            });
+        }
+
+        return $query->get();
     }
 }

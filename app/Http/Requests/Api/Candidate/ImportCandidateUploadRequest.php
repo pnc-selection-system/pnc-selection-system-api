@@ -12,6 +12,7 @@ class ImportCandidateUploadRequest extends FormRequest
             'file'        => 'required|file|mimes:csv,txt,xlsx,xls|max:51200',
             'campaign_id' => 'required|integer|exists:selection_campaigns,id',
             'province_id' => 'required|integer|exists:provinces,id',
+            'ngo_id' => 'nullable|exists:ngo_partners,id',
         ];
     }
 

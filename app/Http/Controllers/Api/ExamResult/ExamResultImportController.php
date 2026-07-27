@@ -7,8 +7,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ExamResult\ImportExamResultUploadRequest;
 use App\Http\Requests\Api\ExamResult\ImportExamResultConfirmRequest;
 use App\Http\Requests\Api\ExamResult\ImportExamResultValidateRequest;
+use App\Models\ExamSubject;
+use App\Models\ImportExamResult;
+use App\Models\SelectCampaing;
 use Exception;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Services\ExamResultImportService;
 
 class ExamResultImportController extends Controller
@@ -64,17 +68,66 @@ class ExamResultImportController extends Controller
      *
      * @POST /api/exam-results/import/confirm
      */
+    /**
+     * Get import history for a given subject and campaign.
+     *
+     * @GET /api/exam-results/import/history
+     */
+    public function history(Request $request): JsonResponse
+    {
+        try {
+            $query = ImportExamResult::with(['subject', 'importer'])
+                ->orderBy('created_at', 'desc');
+
+            if ($request->has('subject_id')) {
+                $query->where('subject_id', (int) $request->input('subject_id'));
+            }
+            if ($request->has('campaign_id')) {
+                $query->where('campaign_id', (int) $request->input('campaign_id'));
+            }
+
+            $history = $query->get()->map(function ($item) {
+                return [
+                    'id'             => $item->id,
+                    'import_file_id' => $item->import_file_id,
+                    'subject_id'     => $item->subject_id,
+                    'subject_name'   => $item->subject?->name ?? 'Unknown',
+                    'campaign_id'    => $item->campaign_id,
+                    'imported_by'    => $item->importer?->name ?? 'System',
+                    'total_rows'     => $item->total_rows,
+                    'imported_rows'  => $item->imported_rows,
+                    'errored_rows'   => $item->errored_rows,
+                    'status'         => $item->status,
+                    'created_at'     => $item->created_at?->toIso8601String(),
+                ];
+            });
+
+            return ApiResponse::success($history, 'Import history retrieved.');
+        } catch (Exception $e) {
+            return ApiResponse::error($e->getMessage(), 422);
+        }
+    }
+
     public function confirm(ImportExamResultConfirmRequest $request): JsonResponse
     {
         try {
             $importFile = \App\Models\ImportFile::findOrFail($request->input('import_file_id'));
+            $subjectId = (int) $request->input('subject_id');
 
             $result = $this->importService->confirmImport(
                 (int) $request->input('import_file_id'),
                 $request->input('column_mapping'),
                 (int) $importFile->campaign_id,
-                (int) $request->input('subject_id')
+                $subjectId
             );
+
+            // Load subject and campaign names for the frontend
+            $subject = ExamSubject::find($subjectId);
+            $campaign = SelectCampaing::find($importFile->campaign_id);
+
+            $result['subject_name'] = $subject?->name ?? 'Unknown';
+            $result['campaign_name'] = $campaign?->name ?? 'Unknown';
+            $result['file_name'] = $importFile->original_filename;
 
             $message = "{$result['imported']} exam result(s) imported successfully.";
 

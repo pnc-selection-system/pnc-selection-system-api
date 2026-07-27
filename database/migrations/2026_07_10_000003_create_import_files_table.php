@@ -11,6 +11,11 @@ return new class extends Migration
         Schema::create('import_files', function (Blueprint $table) {
             $table->id();
             $table->foreignId('campaign_id')->constrained('selection_campaigns')->onDelete('cascade');
+            $table->foreignId('province_id')->constrained('provinces')->onDelete('cascade');
+            $table->foreignId('ngo_id')
+                ->nullable()
+                ->constrained('ngo_partners')
+                ->nullOnDelete();
             $table->string('original_filename', 255);
             $table->string('stored_path', 500);
             $table->string('file_type', 10); // csv, xlsx

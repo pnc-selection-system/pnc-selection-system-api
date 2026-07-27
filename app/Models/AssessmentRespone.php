@@ -14,10 +14,14 @@ class AssessmentRespone extends Model
         'form_id',
         'answers',
         'total_score',
+        'passed',
+        'submitted_by',
     ];
 
     protected $casts = [
         'answers' => 'array',
+        'total_score' => 'decimal:2',
+        'passed' => 'boolean',
     ];
 
     public function form(): BelongsTo
@@ -28,5 +32,10 @@ class AssessmentRespone extends Model
     public function candidate(): BelongsTo
     {
         return $this->belongsTo(Cadidate::class, 'candidate_id');
+    }
+
+    public function submittedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
     }
 }

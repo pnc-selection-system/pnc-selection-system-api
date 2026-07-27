@@ -15,6 +15,9 @@ Route::middleware('auth:api')->group(function () {
     // Confirm and commit exam result import
     Route::post('/exam-results/import/confirm', [ExamResultImportController::class, 'confirm']);
     
+    // Get import history for a subject/campaign
+    Route::get('/exam-results/import/history', [ExamResultImportController::class, 'history']);
+    
     // Results & Analytics endpoints
     Route::get('/exam-results/rounds', [ResultsController::class, 'rounds']);
     Route::get('/exam-results/provinces', [ResultsController::class, 'provinces']);

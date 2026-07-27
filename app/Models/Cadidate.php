@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 
 class Cadidate extends Model
@@ -29,6 +30,16 @@ class Cadidate extends Model
     protected $casts = [
         'dob' => 'date',
     ];
+
+    protected $appends = ['code'];
+
+    /**
+     * Get the candidate's code (alias for student_id).
+     */
+    public function getCodeAttribute(): string
+    {
+        return $this->student_id ?? str_pad((string) $this->id, 4, '0', STR_PAD_LEFT);
+    }
 
     /**
      * Boot the model and register events.
@@ -78,5 +89,10 @@ class Cadidate extends Model
     public function referringNgo(): BelongsTo
     {
         return $this->belongsTo(NgoPartner::class, 'ngo_id');
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(CandidateStatusHistory::class, 'candidate_id');
     }
 }
