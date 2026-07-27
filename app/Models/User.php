@@ -40,6 +40,16 @@ class User extends Authenticatable implements JWTSubject
         'active' => 'boolean',
     ];
 
+    /**
+     * Automatically hash the password when it's set.
+     */
+    public function setPasswordAttribute($value): void
+    {
+        if ($value) {
+            $this->attributes['password'] = \Illuminate\Support\Facades\Hash::make($value);
+        }
+    }
+
     // Relationship
     public function role()
     {

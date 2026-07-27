@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management Test</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f7fb;
+            color: #333;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #1a1a2e;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        /* Cards */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #1a1a2e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Two-column layout */
+        .row {
+            display: flex;
+            gap: 24px;
+        }
+        .col-form {
+            flex: 0 0 360px;
+        }
+        .col-list {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 14px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 4px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #dde1e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67,97,238,0.12);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #4361ee;
+            color: #fff;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: #3a56d4;
+            transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+            background: #a0b0f0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #e9ecef;
+            color: #495057;
+        }
+        .btn-secondary:hover {
+            background: #dee2e6;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: #fff;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 12px;
+        }
+
+        /* Messages */
+        .msg {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 12px;
+            display: none;
+            line-height: 1.5;
+        }
+        .msg.show { display: block; }
+        .msg.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .msg.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .msg.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+
+        /* Table */
+        .table-wrap {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 2px solid #e9ecef;
+            color: #555;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        tr:hover td {
+            background: #f8f9ff;
+        }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-admin { background: #e8f4fd; color: #0d6efd; }
+        .badge-manager { background: #fff3cd; color: #856404; }
+        .badge-officer { background: #d4edda; color: #155724; }
+        .badge-active { background: #d4edda; color: #155724; }
+        .badge-inactive { background: #f8d7da; color: #721c24; }
+        .badge-unknown { background: #f0f0f0; color: #666; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state p { font-size: 14px; }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e9ecef;
+            border-top-color: #4361ee;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .user-count {
+            font-size: 13px;
+            color: #666;
+            margin-left: auto;
+        }
+        .actions-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .token-info {
+            font-size: 11px;
+            color: #999;
+            padding: 4px 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            word-break: break-all;
+            margin-top: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .row { flex-direction: column; }
+            .col-form { flex: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔐 User Management Test</h1>
+    <p class="subtitle">Create users, test login, and see all users in the database</p>
+
+    <div class="row">
+        <!-- LEFT: Create User Form -->
+        <div class="col-form">
+            <div class="card">
+                <div class="card-title">📝 Create New User</div>
+
+                <form id="createForm" onsubmit="createAndLogin(event)">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" value="Test User" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="text" id="password" value="123456" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="role_id">Role</label>
+                        <select id="role_id">
+                            <option value="1">Admin</option>
+                            <option value="2" selected>Manager</option>
+                            <option value="3">Officer</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="createBtn">
+                        ✨ Create User &amp; Login
+                    </button>
+                </form>
+
+                <div id="createMsg" class="msg"></div>
+                <div id="tokenInfo" class="token-info" style="display:none;"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔑 Login Existing User</div>
+                <form onsubmit="loginExisting(event)">
+                    <div class="form-group">
+                        <label for="loginEmail">Email</label>
+                        <input type="email" id="loginEmail" value="admin@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">Password</label>
+                        <input type="text" id="loginPassword" value="admin123">
+                    </div>
+                    <button type="submit" class="btn btn-primary">🔑 Login</button>
+                </form>
+                <div id="loginMsg" class="msg"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">🔍 Diagnose Login Issue</div>
+                <form onsubmit="diagnoseLogin(event)">
+                    <div class="form-group">
+                        <label for="diagEmail">User Email</label>
+                        <input type="email" id="diagEmail" placeholder="user@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="diagPassword">Expected Password</label>
+                        <input type="text" id="diagPassword" placeholder="password">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="diagBtn">🔍 Diagnose Login</button>
+                </form>
+                <div id="diagMsg" class="msg"></div>
+            </div>
+        </div>
+
+        <!-- RIGHT: User List -->
+        <div class="col-list">
+            <div class="card">
+                <div class="card-title">
+                    👥 All Users
+                    <span id="userCount" class="user-count"></span>
+                    <div class="actions-bar" style="margin-left:auto;">
+                        <button class="btn btn-secondary btn-sm" onclick="fetchUsers()">🔄 Refresh</button>
+                        <button class="btn btn-secondary btn-sm" onclick="clearToken()">🚪 Logout</button>
+                    </div>
+                </div>
+
+                <div id="userListContainer">
+                    <div class="empty-state">
+                        <div class="icon">📋</div>
+                        <p>Click <strong>"Create User & Login"</strong> or <strong>"Login"</strong> to see the user list</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ─── Helpers ────────────────────────────────────────────────
+    function getToken() { return localStorage.getItem('jwt_token'); }
+    function setToken(t) { localStorage.setItem('jwt_token', t); }
+    function clearToken() {
+        localStorage.removeItem('jwt_token');
+        document.getElementById('tokenInfo').style.display = 'none';
+        showEmptyState();
+    }
+
+    function showMsg(el, type, html) {
+        el.className = 'msg show ' + type;
+        el.innerHTML = html;
+    }
+    function hideMsg(el) {
+        el.className = 'msg';
+        el.innerHTML = '';
+    }
+
+    function showEmptyState() {
+        document.getElementById('userListContainer').innerHTML = `
+            <div class="empty-state">
+                <div class="icon">🔑</div>
+                <p>Please login first to see the user list</p>
+            </div>
+        `;
+        document.getElementById('userCount').textContent = '';
+    }
+
+    function showLoading() {
+        document.getElementById('userListContainer').innerHTML = `
+            <div class="loading">
+                <span class="spinner"></span>
+                Loading users...
+            </div>
+        `;
+    }
+
+    function showError(msg) {
+        document.getElementById('userListContainer').innerHTML = `
+            <div class="empty-state">
+                <div class="icon">⚠️</div>
+                <p style="color:#dc3545">${msg}</p>
+            </div>
+        `;
+    }
+
+    // ─── Auto-generate unique email on load ────────────────────
+    function generateEmail() {
+        const num = Date.now();
+        const roles = ['admin', 'manager', 'officer', 'dev', 'test'];
+        const name = roles[Math.floor(Math.random() * roles.length)];
+        document.getElementById('email').value = `${name}_${num}@test.com`;
+    }
+
+    // ─── Fetch & render user list ──────────────────────────────
+    async function fetchUsers() {
+        const token = getToken();
+        if (!token) { showEmptyState(); return; }
+
+        showLoading();
+
+        try {
+            const res = await fetch('/api/setup/users-roles/users/all', {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Accept': 'application/json'
+                }
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                if (res.status === 401) {
+                    clearToken();
+                    showError('Session expired. Please login again.');
+                } else if (res.status === 403) {
+                    showError('⛔ Permission denied: Your role does not have the "users.view" permission. Log in with an Admin account to see the user list.');
+                } else {
+                    showError(data.message || 'Failed to fetch users (HTTP ' + res.status + ')');
+                }
+                return;
+            }
+
+            const users = data.data || [];
+            document.getElementById('userCount').textContent = `(${users.length} total)`;
+
+            if (users.length === 0) {
+                document.getElementById('userListContainer').innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">👤</div>
+                        <p>No users found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<div class="table-wrap"><table>
+                <thead><tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                </tr></thead><tbody>`;
+
+            users.forEach(u => {
+                const roleName = (u.role && u.role.name) || 'Unknown';
+                const roleClass = 'badge-' + roleName.toLowerCase();
+                const isActive = u.active !== false;
+                const created = u.created_at ? new Date(u.created_at).toLocaleDateString() : '-';
+
+                html += `<tr>
+                    <td><strong>#${u.id}</strong></td>
+                    <td>${escapeHtml(u.name)}</td>
+                    <td>${escapeHtml(u.email)}</td>
+                    <td><span class="badge ${roleClass}">${roleName}</span></td>
+                    <td><span class="badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>${created}</td>
+                </tr>`;
+            });
+
+            html += '</tbody></table></div>';
+            document.getElementById('userListContainer').innerHTML = html;
+
+        } catch (err) {
+            showError('Network error: ' + err.message);
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // ─── First Login As Admin, Then Create User & Login As The New User ──
+    async function createAndLogin(e) {
+        e.preventDefault();
+        const btn = document.getElementById('createBtn');
+        const msg = document.getElementById('createMsg');
+        const tokenInfo = document.getElementById('tokenInfo');
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Creating...';
+        hideMsg(msg);
+        tokenInfo.style.display = 'none';
+
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const role_id = document.getElementById('role_id').value;
+
+        try {
+            // Step 1: Login as Admin to get an admin token for creation
+            const loginRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ email: 'admin@gmail.com', password: 'admin123' })
+            });
+            const loginData = await loginRes.json();
+            if (!loginData.success || !loginData.data.access_token) {
+                showMsg(msg, 'error', '❌ Admin login failed. Make sure the server is running and admin account exists.');
+                btn.disabled = false;
+                btn.textContent = '✨ Create User & Login';
+                return;
+            }
+            const adminToken = loginData.data.access_token;
+
+            // Step 2: Create user via admin endpoint (admin only)
+            const createRes = await fetch('/api/setup/users-roles/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + adminToken
+                },
+                body: JSON.stringify({ name, email, password, role_id })
+            });
+            const createData = await createRes.json();
+            if (!createData.success) {
+                showMsg(msg, 'error', '❌ CREATE FAILED: ' + (createData.message || JSON.stringify(createData)));
+                btn.disabled = false;
+                btn.textContent = '✨ Create User & Login';
+                return;
+            }
+
+            const roleName = document.getElementById('role_id').options[document.getElementById('role_id').selectedIndex].text;
+
+            // Always keep the ADMIN token so the user list works
+            setToken(adminToken);
+
+            const permTip = (role_id === '1')
+                ? ''
+                : '<br>🔐 The user was created. To test login as this user, use the <strong>"Login Existing User"</strong> form below.';
+
+            showMsg(msg, 'success', `
+                ✅ <strong>User Created!</strong> (viewing as Admin)<br>
+                👤 ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;<br>
+                🔑 Password: <code>${escapeHtml(password)}</code><br>
+                🏷️ Role: ${roleName}
+                ${permTip}
+            `);
+
+            tokenInfo.style.display = 'block';
+            tokenInfo.textContent = 'Logged in as: Admin (admin@gmail.com) — user list visible';
+
+            // Fetch users to show the list (admin token can view all)
+            await fetchUsers();
+
+            // Generate next unique email
+            generateEmail();
+
+        } catch (err) {
+            showMsg(msg, 'error', '❌ NETWORK ERROR: ' + err.message);
+        }
+
+        btn.disabled = false;
+        btn.textContent = '✨ Create User & Login';
+    }
+
+    // ─── Login Existing User ────────────────────────────────────
+    async function loginExisting(e) {
+        e.preventDefault();
+        const msg = document.getElementById('loginMsg');
+        hideMsg(msg);
+
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                showMsg(msg, 'error', '❌ LOGIN FAILED: ' + (data.message || 'Unknown error'));
+                return;
+            }
+
+            setToken(data.data.access_token);
+
+            showMsg(msg, 'success', `
+                ✅ <strong>Login Successful!</strong><br>
+                👤 ${escapeHtml(data.data.user.name)} &lt;${escapeHtml(email)}&gt;<br>
+                🏷️ Role: ${data.data.user.role}
+            `);
+
+            await fetchUsers();
+
+        } catch (err) {
+            showMsg(msg, 'error', '❌ NETWORK ERROR: ' + err.message);
+        }
+    }
+
+    // ─── Diagnose Login Issue ──────────────────────────────────
+    async function diagnoseLogin(e) {
+        e.preventDefault();
+        const btn = document.getElementById('diagBtn');
+        const msg = document.getElementById('diagMsg');
+        hideMsg(msg);
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Checking...';
+
+        const email = document.getElementById('diagEmail').value;
+        const password = document.getElementById('diagPassword').value;
+
+        let diagHtml = '';
+
+        // Step 1: Try to log in
+        try {
+            const loginRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const loginData = await loginRes.json();
+
+            if (loginData.success) {
+                diagHtml += '✅ <strong>Login works!</strong> Token received.<br>';
+                setToken(loginData.data.access_token);
+                await fetchUsers();
+            } else {
+                diagHtml += '❌ <strong>Login failed:</strong> ' + (loginData.message || 'Unknown error') + '<br>';
+                diagHtml += '   ℹ️ This means the email or password is wrong.<br>';
+                diagHtml += '   ℹ️ Check: Is the email spelled correctly? Was the user actually created?<br>';
+            }
+        } catch (err) {
+            diagHtml += '❌ <strong>Network error during login:</strong> ' + err.message + '<br>';
+        }
+
+        // Step 2: If logged in as admin, try fetching user by email
+        const token = getToken();
+        if (token) {
+            try {
+                const usersRes = await fetch('/api/setup/users-roles/users/all', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Accept': 'application/json'
+                    }
+                });
+                const usersData = await usersRes.json();
+                if (usersData.success) {
+                    const users = usersData.data || [];
+                    const foundUser = users.find(u => u.email === email);
+                    if (foundUser) {
+                        diagHtml += `✅ <strong>User found in DB:</strong> ID=#${foundUser.id}, Name=${escapeHtml(foundUser.name)}, Active=${foundUser.active !== false ? 'Yes' : 'No'}<br>`;
+                    } else {
+                        diagHtml += '❌ <strong>User not found</strong> in the database. The user may not have been created.<br>';
+                        diagHtml += '   ℹ️ Try creating the user via the "Create New User" form above.<br>';
+                    }
+                }
+            } catch (err) {
+                diagHtml += 'ℹ️ Could not fetch user list (may need Admin login)<br>';
+            }
+        }
+
+        if (diagHtml) {
+            const isOk = diagHtml.includes('Login works');
+            showMsg(msg, isOk ? 'success' : 'error', diagHtml);
+        }
+
+        btn.disabled = false;
+        btn.textContent = '🔍 Diagnose Login';
+    }
+
+    // ─── On Page Load ──────────────────────────────────────────
+    generateEmail();
+
+    // If we have a saved token, try to fetch users
+    if (getToken()) {
+        document.getElementById('tokenInfo').style.display = 'block';
+        document.getElementById('tokenInfo').textContent = 'Token found in storage. Fetching users...';
+        fetchUsers();
+    }
+</script>
+</body>
+</html>

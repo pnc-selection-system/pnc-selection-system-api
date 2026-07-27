@@ -18,3 +18,5 @@ require __DIR__.'/District.php';
 require __DIR__.'/Commune.php';
 require __DIR__.'/Candidate.php';
 require __DIR__.'/infoSession.php';
+require __DIR__.'/Role.php';
+require __DIR__.'/UserRole.php';
