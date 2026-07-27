@@ -31,7 +31,7 @@ class VotingRoundController extends Controller
             abort(401, 'Unauthenticated');
         }
 
-        $managerRoles = ['Super Admin', 'Selection Manager'];
+        $managerRoles = ['Admin', 'Manager'];
         $role = Role::find($user->role_id);
 
         if (! $role || ! in_array($role->name, $managerRoles)) {
@@ -48,11 +48,6 @@ class VotingRoundController extends Controller
         $this->authorizeManager();
 
         $data = $request->validated();
-
-        // Determine initial status based on start_date
-        if (isset($data['start_date']) && $data['start_date'] > now()->toDateString()) {
-            $data['status'] = 'Scheduled';
-        }
 
         $round = VotingRound::create($data);
         $round->load(['campaign:id,name', 'province:id,name', 'district:id,name']);
@@ -118,12 +113,8 @@ class VotingRoundController extends Controller
         $candidateIds = $request->input('candidate_ids', []);
 
         DB::transaction(function () use ($candidateIds, $votingRound) {
-            // Update candidate status to In Voting
-            Candidate::whereIn('id', $candidateIds)
-                ->where('campaign_id', $votingRound->campaign_id)
-                ->update(['status' => 'In Voting']);
-
             // Attach candidates to round (skip already attached)
+            // Keep candidate status as 'Investigated' so they remain visible in the voting shortlist
             $votingRound->candidates()->syncWithoutDetaching($candidateIds);
         });
 
@@ -151,9 +142,10 @@ class VotingRoundController extends Controller
         $roundCandidateIds = $votingRound->candidates()->pluck('candidates.id');
 
         if ($roundCandidateIds->isNotEmpty()) {
-            // Return candidates already in the round (only those who passed assessment + investigation)
+            // Return candidates already in the round (only investigated candidates who passed assessment + investigation)
             $candidates = $votingRound->candidates()
                 ->with(['campaign:id,name', 'province:id,name', 'referringNgo:id,name'])
+                ->where('candidates.status', 'Investigated')
                 ->whereExists(function ($q) {
                     $q->select(DB::raw(1))
                       ->from('assessment_responses')
@@ -180,7 +172,7 @@ class VotingRoundController extends Controller
         // Eligible = passed interest assessment (assessment_responses.passed = true)
         //            AND approved home investigation (home_investigations.recommendation = 'Recommend')
         $eligibleCandidates = Candidate::where('candidates.campaign_id', $votingRound->campaign_id)
-            ->whereIn('candidates.status', ['Assessed', 'Investigating', 'Shortlisted', 'In Voting'])
+            ->where('candidates.status', 'Investigated')
             ->whereExists(function ($q) {
                 $q->select(DB::raw(1))
                   ->from('assessment_responses')

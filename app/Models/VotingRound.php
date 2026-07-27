@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\VotingMethod;
-use App\Enums\VotingRoundStatus;
 use App\Models\District;
 use App\Models\Province;
 use Illuminate\Database\Eloquent\Model;
@@ -31,7 +30,7 @@ class VotingRound extends Model
     ];
 
     protected $casts = [
-        'status' => VotingRoundStatus::class,
+        'status' => 'string',
         'voting_method' => VotingMethod::class,
         'locked_at' => 'datetime',
         'start_date' => 'date:Y-m-d',
@@ -73,7 +72,7 @@ class VotingRound extends Model
      */
     public function isLocked(): bool
     {
-        if ($this->status === VotingRoundStatus::Closed || $this->locked_at !== null) {
+        if ($this->status === 'Closed' || $this->locked_at !== null) {
             return true;
         }
 
@@ -95,7 +94,7 @@ class VotingRound extends Model
             return false;
         }
 
-        if ($this->status !== VotingRoundStatus::Open) {
+        if ($this->status !== 'Open') {
             return false;
         }
 
@@ -108,15 +107,6 @@ class VotingRound extends Model
     }
 
     /**
-     * Check if the round is scheduled but not yet open.
-     */
-    public function isScheduled(): bool
-    {
-        return $this->status === VotingRoundStatus::Scheduled
-            || ($this->start_date && Date::today()->lt($this->start_date));
-    }
-
-    /**
      * Automatically update the round status based on dates.
      * Called before any voting operation.
      */
@@ -125,21 +115,11 @@ class VotingRound extends Model
         $now = Date::today();
 
         // If end_date has passed, auto-close
-        if ($this->end_date && $now->gt($this->end_date) && $this->status !== VotingRoundStatus::Closed) {
+        if ($this->end_date && $now->gt($this->end_date) && $this->status !== 'Closed') {
             $this->update([
-                'status' => VotingRoundStatus::Closed,
+                'status' => 'Closed',
                 'locked_at' => $now,
             ]);
-            return;
-        }
-
-        // If start_date has arrived, auto-open
-        if ($this->status === VotingRoundStatus::Scheduled
-            && $this->start_date
-            && $now->gte($this->start_date)
-            && (! $this->end_date || $now->lte($this->end_date))
-        ) {
-            $this->update(['status' => VotingRoundStatus::Open]);
         }
     }
 }

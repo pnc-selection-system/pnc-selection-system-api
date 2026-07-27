@@ -62,6 +62,13 @@ class HomeInvestigationController extends Controller
         $query = Candidate::query()
             ->leftJoin('home_investigations', 'candidates.id', '=', 'home_investigations.candidate_id')
             ->leftJoin('selection_campaigns', 'candidates.campaign_id', '=', 'selection_campaigns.id')
+            // Only show candidates who passed the interest assessment
+            ->whereExists(function ($q) {
+                $q->select(DB::raw(1))
+                  ->from('assessment_responses')
+                  ->whereColumn('assessment_responses.candidate_id', 'candidates.id')
+                  ->where('assessment_responses.passed', true);
+            })
             ->select([
                 'candidates.id',
                 'candidates.first_name',
@@ -280,6 +287,9 @@ class HomeInvestigationController extends Controller
 
             $investigation = HomeInvestigation::create($data);
 
+            // Update candidate status to 'Investigated' so they appear in voting page
+            Candidate::where('id', $candidateId)->update(['status' => 'Investigated']);
+
             $this->logHistory($investigation->id, 'Created');
             $this->logHistory($investigation->id, 'Submitted');
 
@@ -298,6 +308,9 @@ class HomeInvestigationController extends Controller
         $data['submitted_at'] = now();
 
         $investigation->update($data);
+
+        // Update candidate status to 'Investigated' so they appear in voting page
+        Candidate::where('id', $candidateId)->update(['status' => 'Investigated']);
 
         // Log to history
         $this->logHistory($investigation->id, 'Submitted');
