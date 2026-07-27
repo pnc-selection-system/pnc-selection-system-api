@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Candidate extends Model
 {
@@ -22,6 +22,7 @@ class Candidate extends Model
         'gender',
         'dob',
         'phone',
+        'photo_url',
         'status',
     ];
 
@@ -48,8 +49,8 @@ class Candidate extends Model
         return $this->belongsTo(NgoPartner::class, 'ngo_id');
     }
 
-    public function votingRounds(): BelongsToMany
+    public function homeInvestigation(): HasOne
     {
-        return $this->belongsToMany(VotingRound::class, 'voting_round_candidates', 'candidate_id', 'voting_round_id');
+        return $this->hasOne(HomeInvestigation::class, 'candidate_id');
     }
 }

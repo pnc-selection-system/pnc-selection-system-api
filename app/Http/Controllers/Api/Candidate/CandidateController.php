@@ -8,6 +8,8 @@ use App\Http\Requests\Api\Candidate\StoreCandidateRequest;
 use App\Http\Requests\Api\Candidate\UpdateCandidateRequest;
 use App\Models\Candidate;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Services\CandidateServices;
 
 class CandidateController extends Controller
@@ -55,5 +57,31 @@ class CandidateController extends Controller
         $stats = $this->candidateService->stats();
 
         return ApiResponse::success($stats, 'Candidate stats retrieved successfully');
+    }
+
+    /**
+     * Upload or update a candidate's profile photo.
+     */
+    public function uploadPhoto(Request $request, Candidate $candidate): JsonResponse
+    {
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
+
+        // Delete old photo if exists
+        if ($candidate->photo_url) {
+            $oldPath = str_replace('/storage/', '', $candidate->photo_url);
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        // Store new photo
+        $path = $request->file('photo')->store('candidates', 'public');
+        $photoUrl = '/storage/' . $path;
+
+        $candidate->update(['photo_url' => $photoUrl]);
+
+        return ApiResponse::success([
+            'photo_url' => $photoUrl,
+        ], 'Photo uploaded successfully');
     }
 }
