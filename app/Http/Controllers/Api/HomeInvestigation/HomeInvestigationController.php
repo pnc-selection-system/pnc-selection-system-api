@@ -187,7 +187,18 @@ class HomeInvestigationController extends Controller
                 'observations' => null,
                 'findings' => null,
                 'recommendation' => null,
-                'reason' => null,
+                'reason' => null,            // Socioeconomic fields
+            'familySize' => null,
+            'monthlyIncome' => null,
+            'occupation' => null,
+            'housingType' => null,
+            'disability' => null,
+            // Education fields
+            'educationLevel' => null,
+            'schoolName' => null,
+            'major' => null,
+            'graduationYear' => null,
+            'ranking' => null,
             ]);
         }
 
@@ -1003,6 +1014,16 @@ class HomeInvestigationController extends Controller
             'recommendation' => 'recommendation',
             'reason' => 'reason',
             'location' => 'location',
+            'familySize' => 'family_size',
+            'monthlyIncome' => 'monthly_income',
+            'occupation' => 'occupation',
+            'housingType' => 'housing_type',
+            'disability' => 'disability',
+            'educationLevel' => 'education_level',
+            'schoolName' => 'school_name',
+            'major' => 'major',
+            'graduationYear' => 'graduation_year',
+            'ranking' => 'ranking',
         ];
 
         $data = [];
@@ -1037,6 +1058,18 @@ class HomeInvestigationController extends Controller
             'findings' => $investigation->findings,
             'recommendation' => $investigation->recommendation,
             'reason' => $investigation->reason,
+            // Socioeconomic fields
+            'familySize' => $investigation->family_size,
+            'monthlyIncome' => $investigation->monthly_income !== null ? (float) $investigation->monthly_income : null,
+            'occupation' => $investigation->occupation,
+            'housingType' => $investigation->housing_type,
+            'disability' => $investigation->disability,
+            // Education fields
+            'educationLevel' => $investigation->education_level,
+            'schoolName' => $investigation->school_name,
+            'major' => $investigation->major,
+            'graduationYear' => $investigation->graduation_year,
+            'ranking' => $investigation->ranking,
         ];
     }
 

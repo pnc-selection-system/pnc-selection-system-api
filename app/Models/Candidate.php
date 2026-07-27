@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Candidate extends Model
 {
@@ -45,5 +46,10 @@ class Candidate extends Model
     public function ngoPartner()
     {
         return $this->belongsTo(NgoPartner::class, 'ngo_id');
+    }
+
+    public function homeInvestigation(): HasOne
+    {
+        return $this->hasOne(HomeInvestigation::class, 'candidate_id');
     }
 }

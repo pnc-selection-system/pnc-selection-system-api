@@ -22,6 +22,16 @@ class SaveDraftRequest extends FormRequest
             'findings' => ['nullable', 'string'],
             'recommendation' => ['nullable', 'string', 'in:Recommend,Not Recommend'],
             'reason' => ['nullable', 'string'],
+            'familySize' => ['nullable', 'integer', 'min:1', 'max:50'],
+            'monthlyIncome' => ['nullable', 'numeric', 'min:0'],
+            'occupation' => ['nullable', 'string', 'max:255'],
+            'housingType' => ['nullable', 'string', 'max:100'],
+            'disability' => ['nullable', 'string', 'max:100'],
+            'educationLevel' => ['nullable', 'string', 'max:255'],
+            'schoolName' => ['nullable', 'string', 'max:255'],
+            'major' => ['nullable', 'string', 'max:255'],
+            'graduationYear' => ['nullable', 'string', 'size:4'],
+            'ranking' => ['nullable', 'string', 'in:A,B,C,D,E,F'],
         ];
     }
 

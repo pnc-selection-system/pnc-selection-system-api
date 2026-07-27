@@ -53,7 +53,7 @@ class CandidateRepository
 
     public function find(Candidate $candidate): Candidate
     {
-        return $candidate;
+        return $candidate->load(['homeInvestigation']);
     }
 
     public function update(Candidate $candidate, array $data): Candidate

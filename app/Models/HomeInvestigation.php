@@ -40,6 +40,20 @@ class HomeInvestigation extends Model
         'recommendation',
         'reason',
 
+        // Socioeconomic fields
+        'family_size',
+        'monthly_income',
+        'occupation',
+        'housing_type',
+        'disability',
+
+        // Education fields
+        'education_level',
+        'school_name',
+        'major',
+        'graduation_year',
+        'ranking',
+
         // Status
         'status',
         'submitted_at',
