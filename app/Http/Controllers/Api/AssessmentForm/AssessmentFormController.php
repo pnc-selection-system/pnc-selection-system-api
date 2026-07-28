@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\AssessmentForm;
 
 use App\Http\Controllers\Controller;
+use App\Models\AssessmentForm;
 use App\Services\AssessmentFormService;
 use App\Helpers\ApiResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AssessmentFormController extends Controller
@@ -62,12 +64,6 @@ class AssessmentFormController extends Controller
 
         $form = $this->service->update($id, $data);
         return ApiResponse::success($form, 'Assessment form updated successfully.');
-    }
-
-    public function questions(int $id)
-    {
-        $form = $this->service->find($id);
-        return ApiResponse::success($form->questions, 'Questions retrieved successfully.');
     }
 
     /**

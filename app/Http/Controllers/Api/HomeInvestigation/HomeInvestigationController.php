@@ -62,13 +62,8 @@ class HomeInvestigationController extends Controller
         $query = Candidate::query()
             ->leftJoin('home_investigations', 'candidates.id', '=', 'home_investigations.candidate_id')
             ->leftJoin('selection_campaigns', 'candidates.campaign_id', '=', 'selection_campaigns.id')
-            // Only show candidates who passed the interest assessment
-            ->whereExists(function ($q) {
-                $q->select(DB::raw(1))
-                  ->from('assessment_responses')
-                  ->whereColumn('assessment_responses.candidate_id', 'candidates.id')
-                  ->where('assessment_responses.passed', true);
-            })
+            // Only show candidates who have passed the interest assessment
+            ->where('candidates.status', \App\Enums\CandidateStatus::InterestAssessmentPassed->value)
             ->select([
                 'candidates.id',
                 'candidates.first_name',

@@ -126,7 +126,7 @@ class AssessmentResponseController extends Controller
         // Auto-update candidate status based on pass/fail
         if ($candidate) {
             $newStatus = $passed
-                ? CandidateStatus::Assessed->value
+                ? CandidateStatus::InterestAssessmentPassed->value
                 : CandidateStatus::InterestAssessmentFail->value;
 
             $candidate->update(['status' => $newStatus]);

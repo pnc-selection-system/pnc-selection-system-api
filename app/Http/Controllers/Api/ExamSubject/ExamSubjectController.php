@@ -18,7 +18,13 @@ class ExamSubjectController extends Controller
 
     public function index(): JsonResponse
     {
-        $subjects = $this->examSubjectService->list(request()->only(['campaign_id', 'per_page']));
+        // Direct query to return ALL subjects without ANY filter or global scope
+        $subjects = ExamSubject::withoutGlobalScopes()
+            ->select('id', 'campaign_id', 'name', 'max_score', 'weight', 'is_delete', 'created_at')
+            ->with('campaign:id,name,status')
+            ->with('rules')
+            ->latest('id')
+            ->get();
 
         return ApiResponse::success($subjects, 'Exam subjects retrieved successfully');
     }
@@ -30,23 +36,27 @@ class ExamSubjectController extends Controller
         return ApiResponse::created($subject, 'Exam subject created successfully');
     }
 
-    public function show(ExamSubject $examSubject): JsonResponse
+    public function show(int $id): JsonResponse
     {
+        $examSubject = ExamSubject::withoutGlobalScopes()->findOrFail($id);
+
         return ApiResponse::success(
             $this->examSubjectService->find($examSubject),
             'Exam subject retrieved successfully'
         );
     }
 
-    public function update(UpdateExamSubjectRequest $request, ExamSubject $examSubject): JsonResponse
+    public function update(UpdateExamSubjectRequest $request, int $id): JsonResponse
     {
+        $examSubject = ExamSubject::withoutGlobalScopes()->findOrFail($id);
         $subject = $this->examSubjectService->update($examSubject, $request->validated());
 
         return ApiResponse::success($subject, 'Exam subject updated successfully');
     }
 
-    public function destroy(ExamSubject $examSubject): JsonResponse
+    public function destroy(int $id): JsonResponse
     {
+        $examSubject = ExamSubject::withoutGlobalScopes()->findOrFail($id);
         $this->examSubjectService->delete($examSubject);
 
         return ApiResponse::ok('Exam subject deleted successfully');

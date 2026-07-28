@@ -6,10 +6,8 @@ use App\Models\Cadidate;
 use App\Models\ExamOverallResult;
 use App\Models\ExamResult;
 use App\Models\ExamSubject;
-use App\Models\ExamThreshold;
 use App\Models\Province;
 use App\Models\SelectCampaing;
-use App\Services\ScoringEngine;
 
 class ResultsService
 {
@@ -69,7 +67,8 @@ class ResultsService
         $overallResults = ExamOverallResult::where('campaign_id', $campaignId)->get();
 
         $satExam = $overallResults->count();
-        $passed  = $overallResults->where('passed', true)->count();
+        // Use simple 50% threshold: >50% = Pass, <50% = Fail
+        $passed  = $overallResults->where('overall_percentage', '>', 50)->count();
         $failed  = $satExam - $passed;
         $passRate = $satExam > 0 ? round(($passed / $satExam) * 100) : 0;
 
@@ -80,12 +79,6 @@ class ResultsService
                 ->pluck('candidate_id');
 
             $satExam = $candidateIds->count();
-
-            // Get overall threshold
-            $overallThreshold = ExamThreshold::where('campaign_id', $campaignId)
-                ->whereNull('subject_id')
-                ->first();
-            $overallPassScore = $overallThreshold ? (float) $overallThreshold->overall_pass_mark : null;
 
             $subjects = ExamSubject::where('campaign_id', $campaignId)->get();
             $totalWeight = $subjects->sum('weight');
@@ -108,9 +101,8 @@ class ResultsService
                 }
                 $overallPct = $totalWeight > 0 ? ($totalWeighted / $totalWeight) * 100 : 0;
 
-                // Determine pass/fail using actual threshold
-                $passedOverall = ScoringEngine::determinePassFail($overallPct, $overallPassScore);
-                if ($passedOverall ?? false) {
+                // Simple 50% threshold: >50% = Pass, <50% = Fail
+                if ($overallPct > 50) {
                     $passedCount++;
                 }
             }
@@ -189,11 +181,8 @@ class ResultsService
             ? round($percentages[(int) floor(count($percentages) / 2)], 1)
             : 0;
 
-        // Get pass line from threshold
-        $threshold = ExamThreshold::where('campaign_id', $campaignId)
-            ->whereNull('subject_id')
-            ->first();
-        $passLine = $threshold ? (float) $threshold->overall_pass_mark : 0;
+        // Simple 50% pass line (consistent with results table)
+        $passLine = 50;
 
         // Build buckets
         $buckets = $this->buildBuckets($percentages, $passLine);
@@ -247,7 +236,8 @@ class ResultsService
                     'student_id'=> $candidate->student_id,
                     'scores'    => $scores,
                     'total'     => (float) $overall->overall_percentage,
-                    'result'    => $overall->passed ? 'Pass' : 'Fail',
+                    // Simple 50% threshold: >50% = Pass, <50% = Fail
+                    'result'    => (float) $overall->overall_percentage > 50 ? 'Pass' : 'Fail',
                 ];
             }
         } else {
@@ -288,26 +278,20 @@ class ResultsService
                 ];
             }
 
-            // Get overall threshold
-            $overallThreshold = ExamThreshold::where('campaign_id', $campaignId)
-                ->whereNull('subject_id')
-                ->first();
-            $overallPassScore = $overallThreshold ? (float) $overallThreshold->overall_pass_mark : null;
-
             // Sort by total descending and assign ranks
             usort($candidateScores, fn ($a, $b) => $b['total'] <=> $a['total']);
 
             $rank = 1;
             foreach ($candidateScores as $entry) {
                 $candidate = $candidates->get($entry['candidate_id']);
-                $passedOverall = ScoringEngine::determinePassFail($entry['total'], $overallPassScore);
                 $rows[] = [
                     'rank'      => $rank++,
                     'candidate' => $candidate ? $candidate->first_name . ' ' . $candidate->last_name : 'Unknown',
                     'student_id'=> $candidate->student_id ?? '',
                     'scores'    => $entry['scores'],
                     'total'     => $entry['total'],
-                    'result'    => ($passedOverall ?? false) ? 'Pass' : 'Fail',
+                    // Simple 50% threshold: >50% = Pass, <50% = Fail
+                    'result'    => $entry['total'] > 50 ? 'Pass' : 'Fail',
                 ];
             }
         }

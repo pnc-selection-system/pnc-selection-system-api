@@ -113,7 +113,7 @@ class ResponseController extends Controller
         $candidate = Candidate::find((int) $request->input('candidate_id'));
         if ($candidate) {
             $newStatus = $passed
-                ? CandidateStatus::Assessed->value
+                ? CandidateStatus::InterestAssessmentPassed->value
                 : CandidateStatus::InterestAssessmentFail->value;
 
             $candidate->update(['status' => $newStatus]);

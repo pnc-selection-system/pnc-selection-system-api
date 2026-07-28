@@ -84,7 +84,8 @@ class ExamResultImportService
         }
 
         // Load subject rules for preview/scoring info
-        $subject = ExamSubject::with('rules')->find($subjectId);
+        // Bypass global scopes so subjects with is_delete=true are still findable
+        $subject = ExamSubject::withoutGlobalScopes()->with('rules')->find($subjectId);
         $subjectRules = $subject ? $subject->rules->toArray() : [];
 
         // Build rule summary for frontend display
@@ -237,7 +238,8 @@ class ExamResultImportService
         $dataRows = array_slice($rows, 1);
 
         // Load subject with rules
-        $subject = ExamSubject::with('rules')->find($subjectId);
+        // Bypass global scopes so deleted subjects are still findable
+        $subject = ExamSubject::withoutGlobalScopes()->with('rules')->find($subjectId);
         $subjectRules = $subject ? $subject->rules->toArray() : [];
         $maxScore = $subject ? (float) $subject->max_score : 100;
 
@@ -408,7 +410,8 @@ class ExamResultImportService
         $dataRows = array_slice($rows, 1);
 
         // Load subject with rules and threshold
-        $subject = ExamSubject::with('rules')->find($subjectId);
+        // Bypass global scopes (e.g. 'not_deleted') so subjects with is_delete=true are still findable
+        $subject = ExamSubject::withoutGlobalScopes()->with('rules')->find($subjectId);
         if (! $subject) {
             throw new Exception('Subject not found.');
         }
@@ -531,6 +534,15 @@ class ExamResultImportService
             // Calculate overall results for all imported candidates
             if (! empty($importedCandidateIds)) {
                 $this->calculateOverallResults($campaignId, array_keys($importedCandidateIds));
+            }
+
+            // Mark candidates in the campaign who don't have any exam result as Absent
+            $candidateIdsWithResult = array_keys($importedCandidateIds);
+            if (! empty($candidateIdsWithResult)) {
+                Cadidate::where('campaign_id', $campaignId)
+                    ->whereNotIn('id', $candidateIdsWithResult)
+                    ->where('status', 'Register')
+                    ->update(['status' => \App\Enums\CandidateStatus::Absent->value]);
             }
 
             // Update import file status
@@ -660,14 +672,9 @@ class ExamResultImportService
      */
     private function calculateOverallResults(int $campaignId, array $candidateIds): void
     {
-        $subjects = ExamSubject::where('campaign_id', $campaignId)->get();
+        // Bypass global scopes so soft-deleted subjects are still included in overall calculation
+        $subjects = ExamSubject::withoutGlobalScopes()->where('campaign_id', $campaignId)->get();
         $totalWeight = $subjects->sum('weight');
-
-        // Get overall threshold
-        $overallThreshold = ExamThreshold::where('campaign_id', $campaignId)
-            ->whereNull('subject_id')
-            ->first();
-        $overallPassScore = $overallThreshold ? (float) $overallThreshold->overall_pass_mark : null;
 
         foreach ($candidateIds as $candidateId) {
             $results = ExamResult::where('campaign_id', $campaignId)
@@ -690,7 +697,8 @@ class ExamResultImportService
             }
 
             $overallPct = $totalWeight > 0 ? round(($totalWeighted / $totalWeight) * 100, 2) : 0.0;
-            $overallPassed = ScoringEngine::determinePassFail($overallPct, $overallPassScore);
+            // Simple 50% threshold: >50% = Pass, <50% = Fail (consistent with Results & Analytics page)
+            $overallPassed = $overallPct > 50;
 
             ExamOverallResult::updateOrCreate(
                 [
@@ -700,11 +708,17 @@ class ExamResultImportService
                 [
                     'total_weighted_score' => round($totalWeighted, 2),
                     'overall_percentage'   => $overallPct,
-                    'passed'               => $overallPassed ?? false,
+                    'passed'               => $overallPassed,
                     'status'               => 'draft',
                     'version'              => 1,
                 ]
             );
+
+            // Update candidate status based on overall percentage (not per-subject)
+            $newStatus = $overallPassed
+                ? \App\Enums\CandidateStatus::ExamPassed->value
+                : \App\Enums\CandidateStatus::ExamFail->value;
+            Cadidate::where('id', $candidateId)->update(['status' => $newStatus]);
         }
     }
 

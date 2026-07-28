@@ -9,9 +9,13 @@ class ExamSubjectRepository
 {
     public function list(array $filters = [])
     {
-        return ExamSubject::select('id', 'campaign_id', 'name', 'max_score', 'weight', 'is_delete', 'created_at')
+        // Use withoutGlobalScope to ensure all non-deleted subjects are returned,
+        // even if the 'not_deleted' scope has a boolean vs integer mismatch.
+        return ExamSubject::withoutGlobalScope('not_deleted')
+            ->select('id', 'campaign_id', 'name', 'max_score', 'weight', 'is_delete', 'created_at')
             ->with('campaign:id,name,status')
             ->with('rules')
+            ->where('is_delete', 0)
             ->when(
                 !empty($filters['campaign_id']),
                 fn($q) => $q->where('campaign_id', (int) $filters['campaign_id'])

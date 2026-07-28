@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\ExamResult;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ExamResult\ImportExamResultUploadRequest;
-use App\Http\Requests\Api\ExamResult\ImportExamResultConfirmRequest;
 use App\Http\Requests\Api\ExamResult\ImportExamResultValidateRequest;
 use App\Models\ExamSubject;
 use App\Models\ImportExamResult;
@@ -64,11 +63,6 @@ class ExamResultImportController extends Controller
     }
 
     /**
-     * Confirm the import with the provided column mapping.
-     *
-     * @POST /api/exam-results/import/confirm
-     */
-    /**
      * Get import history for a given subject and campaign.
      *
      * @GET /api/exam-results/import/history
@@ -108,26 +102,27 @@ class ExamResultImportController extends Controller
         }
     }
 
-    public function confirm(ImportExamResultConfirmRequest $request): JsonResponse
+    public function confirm(Request $request): JsonResponse
     {
         try {
-            $importFile = \App\Models\ImportFile::findOrFail($request->input('import_file_id'));
-            $subjectId = (int) $request->input('subject_id');
+            $importFileId = (int) ($request->input('import_file_id') ?: 0);
+            $subjectId    = (int) ($request->input('subject_id') ?: 0);
+            $importFile   = $importFileId ? \App\Models\ImportFile::find($importFileId) : null;
 
             $result = $this->importService->confirmImport(
-                (int) $request->input('import_file_id'),
-                $request->input('column_mapping'),
-                (int) $importFile->campaign_id,
+                $importFileId,
+                $request->input('column_mapping', []),
+                $importFile ? (int) $importFile->campaign_id : 0,
                 $subjectId
             );
 
             // Load subject and campaign names for the frontend
-            $subject = ExamSubject::find($subjectId);
-            $campaign = SelectCampaing::find($importFile->campaign_id);
+            $subject  = ExamSubject::withoutGlobalScopes()->find($subjectId);
+            $campaign = $importFile ? SelectCampaing::find($importFile->campaign_id) : null;
 
-            $result['subject_name'] = $subject?->name ?? 'Unknown';
+            $result['subject_name']  = $subject?->name ?? 'Unknown';
             $result['campaign_name'] = $campaign?->name ?? 'Unknown';
-            $result['file_name'] = $importFile->original_filename;
+            $result['file_name']     = $importFile?->original_filename ?? 'Unknown';
 
             $message = "{$result['imported']} exam result(s) imported successfully.";
 

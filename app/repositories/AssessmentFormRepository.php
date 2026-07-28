@@ -67,18 +67,19 @@ class AssessmentFormRepository
     public function find(int $id): AssessmentForm
     {
         $this->ensureFormTableSchema();
-        return $assessmentForm;
+        return AssessmentForm::findOrFail($id);
     }
 
     public function update(int $id, array $data)
     {
         $this->ensureFormTableSchema();
+        $assessmentForm = AssessmentForm::findOrFail($id);
         $assessmentForm->update($data);
         return $assessmentForm;
     }
 
     public function delete(AssessmentForm $assessmentForm): void
     {
-        $assessmentForm->delete($assessmentForm);
+        $assessmentForm->delete();
     }
 }
