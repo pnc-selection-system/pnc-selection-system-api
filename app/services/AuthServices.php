@@ -5,7 +5,7 @@ namespace Services;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Repositories\AuthRepository;
+use App\Repositories\AuthRepository;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -45,7 +45,12 @@ class AuthServices
             ];
         }
 
-        $refreshToken = $this->generateRefreshToken($user);
+        // Load permissions for the user's role
+        if ($user->role) {
+            $user->role->load('permissions');
+        }
+
+        $permissions = $user->role?->permissions?->pluck('name') ?? collect();
 
         return [
             'success' => true,
@@ -58,10 +63,10 @@ class AuthServices
                     'email' => $user->email,
                     'role'  => $user->role?->name ?? 'User',
                 ],
-                'access_token'  => $token,
-                'refresh_token' => $refreshToken,
-                'token_type'    => 'Bearer',
-                'expires_in'    => (int) config('jwt.ttl') * 60,
+                'access_token' => $token,
+                'token_type'   => 'Bearer',
+                'expires_in'   => config('jwt.ttl') * 60,
+                'permissions'  => $permissions,
             ],
         ];
     }
@@ -80,7 +85,7 @@ class AuthServices
             'role_id'  => $data['role_id'],
             'name'     => $data['name'],
             'email'    => $data['email'],
-            'password' => Hash::make($data['password']),
+            'password' => $data['password'],
             'phone'    => $data['phone'] ?? null,
             'active'   => true,
         ]);

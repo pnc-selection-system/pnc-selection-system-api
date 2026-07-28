@@ -2,7 +2,7 @@
 
 namespace Services;
 
-use App\Models\Cadidate;
+use App\Models\Candidate;
 use App\Models\ImportFile;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -317,12 +317,7 @@ class ImportCandidateServices
                 }
 
                 try {
-                    // Generate student_id if not provided
-                    if (empty($candidateData['student_id'])) {
-                        $candidateData['student_id'] = Cadidate::generateStudentId();
-                    }
-                    
-                    Cadidate::create($candidateData);
+                    Candidate::create($candidateData);
                     $importedCount++;
                 } catch (Exception $e) {
                     $errors[] = "Row {$rowNumber}: {$e->getMessage()}";

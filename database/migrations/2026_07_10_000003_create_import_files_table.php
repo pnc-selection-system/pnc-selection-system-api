@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('import_files')) {
+            return;
+        }
+
         Schema::create('import_files', function (Blueprint $table) {
             $table->id();
             $table->foreignId('campaign_id')->constrained('selection_campaigns')->onDelete('cascade');

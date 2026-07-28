@@ -3,11 +3,10 @@
 namespace Repositories;
 
 use App\Models\Province;
-use Illuminate\Database\Eloquent\Collection;
 
 class ProvinceRepository
 {
-    public function list(array $filters = []): Collection
+    public function list(array $filters = [])
     {
         $query = Province::select('id', 'name')->orderBy('name');
 
@@ -18,5 +17,27 @@ class ProvinceRepository
         }
 
         return $query->get();
+    }
+
+    public function create(array $data): Province
+    {
+        return Province::create($data);
+    }
+
+    public function find(Province $province): Province
+    {
+        return $province;
+    }
+
+    public function update(Province $province, array $data): Province
+    {
+        $province->update($data);
+
+        return $province->fresh();
+    }
+
+    public function delete(Province $province): void
+    {
+        $province->delete();
     }
 }

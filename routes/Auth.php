@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/auth/login', [LoginController::class, 'login']);
 Route::post('/auth/refresh', [RefreshController::class, 'refresh']);
-Route::middleware('auth:api')->group(function () {
+Route::middleware('jwt.auth')->group(function () {
     Route::post('/auth/logout', [LogoutController::class, 'logout']);
     Route::get('/auth/profile', [ProfileController::class, 'profile']);
 });

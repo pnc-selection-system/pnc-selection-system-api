@@ -6,7 +6,6 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserSeeder extends Seeder
@@ -25,7 +24,7 @@ class UserSeeder extends Seeder
             [
                 'role_id' => $adminRole->id,
                 'name' => 'Super Admin',
-                'password' => Hash::make('admin123'),
+                'password' => 'admin123',
                 'phone' => '0123456789',
                 'active' => true,
             ]
@@ -36,7 +35,7 @@ class UserSeeder extends Seeder
             [
                 'role_id' => $managerRole->id,
                 'name' => 'Manager User',
-                'password' => Hash::make('manager123'),
+                'password' => 'manager123',
                 'phone' => '0123456790',
                 'active' => true,
             ]
@@ -47,7 +46,7 @@ class UserSeeder extends Seeder
             [
                 'role_id' => $officerRole->id,
                 'name' => 'Officer User',
-                'password' => Hash::make('officer123'),
+                'password' => 'officer123',
                 'phone' => '0123456791',
                 'active' => true,
             ]

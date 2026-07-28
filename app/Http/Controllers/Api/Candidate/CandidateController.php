@@ -6,10 +6,10 @@ use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Candidate\StoreCandidateRequest;
 use App\Http\Requests\Api\Candidate\UpdateCandidateRequest;
-use App\Models\AssessmentRespone;
-use App\Models\Cadidate;
-use App\Models\CandidateStatusHistory;
+use App\Models\Candidate;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Services\CandidateServices;
 
 class CandidateController extends Controller
@@ -30,7 +30,7 @@ class CandidateController extends Controller
         return ApiResponse::created($candidate, 'Candidate created successfully');
     }
 
-    public function show(Cadidate $candidate): JsonResponse
+    public function show(Candidate $candidate): JsonResponse
     {
         return ApiResponse::success(
             $this->candidateService->find($candidate),
@@ -38,101 +38,50 @@ class CandidateController extends Controller
         );
     }
 
-    public function update(UpdateCandidateRequest $request, Cadidate $candidate): JsonResponse
+    public function update(UpdateCandidateRequest $request, Candidate $candidate): JsonResponse
     {
         $candidate = $this->candidateService->update($candidate, $request->validated());
 
         return ApiResponse::success($candidate, 'Candidate updated successfully');
     }
 
-    public function destroy(Cadidate $candidate): JsonResponse
+    public function destroy(Candidate $candidate): JsonResponse
     {
         $this->candidateService->delete($candidate);
 
         return ApiResponse::ok('Candidate deleted successfully');
     }
 
-    /**
-     * Get the latest interest assessment result for a candidate.
-     */
-    public function assessmentResult(Cadidate $candidate): JsonResponse
+    public function stats(): JsonResponse
     {
-        $latestResponse = AssessmentRespone::where('candidate_id', $candidate->id)
-            ->with(['form', 'submittedBy'])
-            ->latest()
-            ->first();
+        $stats = $this->candidateService->stats();
 
-        if (!$latestResponse) {
-            return ApiResponse::success(null, 'No assessment found for this candidate');
-        }
-
-        // Determine evaluator name from the submittedBy relationship
-        // For new assessments, this is the authenticated user who submitted via ResponseController::store()
-        // For old records (before submitted_by column existed), this will be null → 'System'
-        $evaluatedBy = $latestResponse->submittedBy?->name ?? 'System';
-
-        return ApiResponse::success([
-            'total_score' => (float) $latestResponse->total_score,
-            'passed' => $latestResponse->passed,
-            'form_name' => $latestResponse->form?->name ?? 'Interest Assessment',
-            'pass_threshold' => (float) ($latestResponse->form?->pass_threshold ?? 60),
-            'submitted_at' => $latestResponse->created_at?->toIso8601String(),
-            'evaluated_by' => $evaluatedBy,
-        ], 'Assessment result retrieved successfully');
+        return ApiResponse::success($stats, 'Candidate stats retrieved successfully');
     }
 
     /**
-     * Get status history for a candidate.
-     * If no history exists yet (e.g. for candidates created before this feature),
-     * auto-create an initial entry based on their current status and created_at date.
+     * Upload or update a candidate's profile photo.
      */
-    public function statusHistory(Cadidate $candidate): JsonResponse
+    public function uploadPhoto(Request $request, Candidate $candidate): JsonResponse
     {
-        $existingHistory = CandidateStatusHistory::where('candidate_id', $candidate->id)
-            ->with('changedBy')
-            ->orderBy('changed_at', 'asc')
-            ->get();
+        $request->validate([
+            'photo' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+        ]);
 
-        // If no history exists, auto-create entries from candidate's current data
-        // This handles candidates created before the status history feature existed
-        if ($existingHistory->isEmpty()) {
-            $now = now();
-            $currentStatus = $candidate->status ?? 'Register';
-
-            // Always record the initial "Register" at creation time
-            CandidateStatusHistory::create([
-                'candidate_id' => $candidate->id,
-                'status' => 'Register',
-                'changed_by' => null,
-                'changed_at' => $candidate->created_at ?? $now,
-            ]);
-
-            // If current status differs from Register, record that change too
-            if ($currentStatus !== 'Register') {
-                CandidateStatusHistory::create([
-                    'candidate_id' => $candidate->id,
-                    'status' => $currentStatus,
-                    'changed_by' => null,
-                    'changed_at' => $now,
-                ]);
-            }
-
-            // Re-fetch to get the newly created entries
-            $existingHistory = CandidateStatusHistory::where('candidate_id', $candidate->id)
-                ->with('changedBy')
-                ->orderBy('changed_at', 'asc')
-                ->get();
+        // Delete old photo if exists
+        if ($candidate->photo_url) {
+            $oldPath = str_replace('/storage/', '', $candidate->photo_url);
+            Storage::disk('public')->delete($oldPath);
         }
 
-        $history = $existingHistory->map(function ($entry) {
-            return [
-                'id' => $entry->id,
-                'status' => $entry->status,
-                'changed_by' => $entry->changedBy?->name ?? 'System',
-                'changed_at' => $entry->changed_at->toIso8601String(),
-            ];
-        });
+        // Store new photo
+        $path = $request->file('photo')->store('candidates', 'public');
+        $photoUrl = '/storage/' . $path;
 
-        return ApiResponse::success($history, 'Status history retrieved successfully');
+        $candidate->update(['photo_url' => $photoUrl]);
+
+        return ApiResponse::success([
+            'photo_url' => $photoUrl,
+        ], 'Photo uploaded successfully');
     }
 }

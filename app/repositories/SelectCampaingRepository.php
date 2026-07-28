@@ -24,21 +24,7 @@ class SelectCampaingRepository
 
     public function create(array $data): SelectCampaing
     {
-        $provinceIds = $data['province_ids'] ?? [];
-        unset($data['province_ids']);
-
-        $selectCampaing = SelectCampaing::create($data);
-
-        if (!empty($provinceIds)) {
-            $selectCampaing->provinces()->sync($provinceIds);
-        }
-
-        $selectCampaing->province_total = count($provinceIds);
-        $selectCampaing->save();
-
-        $selectCampaing->load('provinces:id,name');
-
-        return $selectCampaing;
+        return SelectCampaing::create($data);
     }
 
     public function find(SelectCampaing $selectCampaing): SelectCampaing
@@ -47,7 +33,6 @@ class SelectCampaingRepository
 
         return $selectCampaing;
     }
-
     public function update(SelectCampaing $selectCampaing, array $data): SelectCampaing
     {
         $provinceIds = $data['province_ids'] ?? null;
@@ -69,7 +54,6 @@ class SelectCampaingRepository
 
     public function delete(SelectCampaing $selectCampaing): void
     {
-        $selectCampaing->provinces()->detach();
-        $selectCampaing->delete();
+        $selectCampaing->delete($selectCampaing);
     }
 }

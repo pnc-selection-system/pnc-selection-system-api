@@ -32,7 +32,7 @@ class NgoPartner extends Model
 
     public function candidates(): HasMany
     {
-        return $this->hasMany(Cadidate::class, 'ngo_id');
+        return $this->hasMany(Candidate::class, 'ngo_id');
     }
 
     public function communicationLogs(): HasMany

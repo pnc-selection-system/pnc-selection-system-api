@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('ngo_partners')) {
+            return;
+        }
+
         Schema::create('ngo_partners', function (Blueprint $table) {
             $table->id();
             $table->string('name', 150);

@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('votes')) {
+            return;
+        }
+
         Schema::create('votes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('voting_round_id')->constrained('voting_rounds')->onDelete('cascade');

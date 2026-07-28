@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CandidateStatusHistory extends Model
 {
+    protected $table = 'candidate_status_histories';
+
     protected $fillable = [
         'candidate_id',
         'status',
@@ -20,7 +22,7 @@ class CandidateStatusHistory extends Model
 
     public function candidate(): BelongsTo
     {
-        return $this->belongsTo(Cadidate::class, 'candidate_id');
+        return $this->belongsTo(Candidate::class);
     }
 
     public function changedBy(): BelongsTo

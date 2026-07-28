@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('ngo_contact_persons')) {
+            return;
+        }
+
         Schema::create('ngo_contact_persons', function (Blueprint $table) {
             $table->id();
 

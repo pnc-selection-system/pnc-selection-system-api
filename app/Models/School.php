@@ -8,8 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class School extends Model
 {
     protected $fillable = [
-
-        'village_id',
+        'district_id',
         'name',
     ];
 
@@ -18,15 +17,18 @@ class School extends Model
         return $this->belongsTo(Province::class);
     }
 
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class);
+    }
+
     public function candidates()
     {
-        return $this->hasMany(Cadidate::class);
-
+        return $this->hasMany(Candidate::class);
+    }
 
     public function infoSessions()
     {
         return $this->hasMany(InfoSession::class);
     }
-}
-
 }

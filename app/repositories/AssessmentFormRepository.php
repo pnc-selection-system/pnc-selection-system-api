@@ -44,42 +44,6 @@ class AssessmentFormRepository
         }
     }
 
-    /**
-     * Sync the assessment_questions table from the schema.fields array.
-     * Deletes existing questions for the form and inserts fresh ones.
-     */
-    protected function syncQuestions(AssessmentForm $form, array $data): void
-    {
-        $fields = $data['schema']['fields'] ?? null;
-        if ($fields === null) {
-            return;
-        }
-
-        // Delete existing questions for this form
-        $form->questions()->delete();
-
-        // Insert new questions from schema fields
-        $questions = [];
-        foreach ($fields as $i => $field) {
-            $questions[] = [
-                'assessment_form_id' => $form->id,
-                'key' => $field['key'] ?? 'field_' . $i,
-                'label' => $field['label'] ?? '',
-                'type' => $field['type'] ?? 'text',
-                'order' => $i + 1,
-                'weight' => $field['weight'] ?? 1,
-                'options' => isset($field['options']) ? json_encode($field['options']) : null,
-                'point_map' => isset($field['point_map']) ? json_encode($field['point_map']) : null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        if (!empty($questions)) {
-            AssessmentQuestion::insert($questions);
-        }
-    }
-
     public function list(array $filters = [])
     {
         $this->ensureFormTableSchema();
@@ -97,28 +61,24 @@ class AssessmentFormRepository
     public function create(array $data): AssessmentForm
     {
         $this->ensureFormTableSchema();
-        $form = AssessmentForm::create($data);
-        $this->syncQuestions($form, $data);
-        return $form;
+        return AssessmentForm::create($data);
     }
 
     public function find(int $id): AssessmentForm
     {
         $this->ensureFormTableSchema();
-        return AssessmentForm::findOrFail($id);
+        return $assessmentForm;
     }
 
     public function update(int $id, array $data)
     {
         $this->ensureFormTableSchema();
-        $assessmentForm = AssessmentForm::findOrFail($id);
         $assessmentForm->update($data);
-        $this->syncQuestions($assessmentForm, $data);
         return $assessmentForm;
     }
 
     public function delete(AssessmentForm $assessmentForm): void
     {
-        $assessmentForm->delete();
+        $assessmentForm->delete($assessmentForm);
     }
 }

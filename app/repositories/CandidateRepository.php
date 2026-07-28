@@ -2,16 +2,34 @@
 
 namespace Repositories;
 
-use App\Models\Cadidate;
-use App\Models\CandidateStatusHistory;
+use App\Models\Candidate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class CandidateRepository
 {
+    public function stats(): array
+    {
+        $total = Candidate::count();
+        $registered = Candidate::where('status', 'Register')->count();
+        $assessed = Candidate::where('status', 'Assessed')->count();
+        $examPassed = Candidate::where('status', 'Exam Passed')->count();
+        $interestFail = Candidate::where('status', 'Interest Assessment Fail')->count();
+        $investigating = Candidate::where('status', 'Investigating')->count();
+
+        return [
+            'total' => $total,
+            'registered' => $registered,
+            'assessed' => $assessed,
+            'exam_passed' => $examPassed,
+            'interest_fail' => $interestFail,
+            'investigating' => $investigating,
+        ];
+    }
+
     public function list(array $filters = []): Collection
     {
-        $query = Cadidate::query();
+        $query = Candidate::query();
 
         if (! empty($filters['search'])) {
             $searchTerm = '%'.$filters['search'].'%';
@@ -51,27 +69,17 @@ class CandidateRepository
         return $query->with(['campaign', 'province', 'referringNgo'])->latest()->get();
     }
 
-    public function create(array $data): Cadidate
+    public function create(array $data): Candidate
     {
-        $candidate = Cadidate::create($data);
-
-        // Record initial status history for Registered status
-        CandidateStatusHistory::create([
-            'candidate_id' => $candidate->id,
-            'status' => $data['status'] ?? 'Register',
-            'changed_by' => Auth::id(),
-            'changed_at' => now(),
-        ]);
-
-        return $candidate;
+        return Candidate::create($data);
     }
 
-    public function find(Cadidate $candidate): Cadidate
+    public function find(Candidate $candidate): Candidate
     {
-        return $candidate;
+        return $candidate->load(['homeInvestigation']);
     }
 
-    public function update(Cadidate $candidate, array $data): Cadidate
+    public function update(Candidate $candidate, array $data): Candidate
     {
         // Check if status is being changed
         $oldStatus = $candidate->status;
@@ -91,9 +99,9 @@ class CandidateRepository
         return $candidate;
     }
 
-    public function delete(Cadidate $candidate): void
+    public function delete(Candidate $candidate): void
     {
-        $candidate->delete();
+        $candidate->delete($candidate);
     }
 
     /**
