@@ -8,6 +8,7 @@ use App\Http\Requests\Api\VotingRound\AddCandidatesRequest;
 use App\Http\Requests\Api\VotingRound\CastVoteRequest;
 use App\Http\Requests\Api\VotingRound\StoreVotingRoundRequest;
 use App\Models\Candidate;
+use App\Models\CandidateStatusHistory;
 use App\Models\Role;
 use App\Models\Vote;
 use App\Models\VotingRound;
@@ -217,12 +218,6 @@ class VotingRoundController extends Controller
             return ApiResponse::error('Round is not open for voting.', 422);
         }
 
-        // Verify candidate is in this round
-        $exists = $votingRound->candidates()->where('candidate_id', $cid)->exists();
-        if (! $exists) {
-            return ApiResponse::notFound('Candidate is not in this voting round.');
-        }
-
         // Double-check eligibility: must have passed interest assessment AND home investigation
         $passedAssessment = DB::table('assessment_responses')
             ->where('candidate_id', $cid)
@@ -240,6 +235,12 @@ class VotingRoundController extends Controller
 
         if (! $passedInvestigation) {
             return ApiResponse::error('Candidate has not been recommended by home investigation.', 422);
+        }
+
+        // Check if candidate is in this round's pivot table — if not, auto-add them
+        $exists = $votingRound->candidates()->where('candidate_id', $cid)->exists();
+        if (! $exists) {
+            $votingRound->candidates()->syncWithoutDetaching([$cid]);
         }
 
         $user = $request->user();
@@ -278,12 +279,70 @@ class VotingRoundController extends Controller
         $tallies = $this->tallyService->tallyAll($votingRound);
         $quorum = $this->tallyService->checkQuorum($votingRound);
 
+        // Batch load candidates to avoid N+1 queries
+        $candidateIds = collect($tallies)->pluck('candidate_id');
+        $candidates = Candidate::with(['province:id,name', 'referringNgo:id,name'])
+            ->whereIn('id', $candidateIds)
+            ->get()
+            ->keyBy('id');
+
+        // Batch load current user's votes for all candidates in this round
+        $userId = $request->user()?->id;
+        $myVotes = Vote::where('voting_round_id', $votingRound->id)
+            ->where('member_id', $userId)
+            ->whereIn('candidate_id', $candidateIds)
+            ->get()
+            ->keyBy('candidate_id');
+
+        // Batch load exam scores (average of all subjects)
+        $examScores = DB::table('exam_results')
+            ->join('exam_subjects', 'exam_results.subject_id', '=', 'exam_subjects.id')
+            ->whereIn('exam_results.candidate_id', $candidateIds)
+            ->where('exam_subjects.campaign_id', $votingRound->campaign_id)
+            ->selectRaw('exam_results.candidate_id, AVG(exam_results.final_score) as avg_score, MIN(exam_results.rank) as rank')
+            ->groupBy('exam_results.candidate_id')
+            ->get()
+            ->keyBy('candidate_id');
+
+        // Batch load assessment scores
+        $assessments = DB::table('assessment_responses')
+            ->whereIn('candidate_id', $candidateIds)
+            ->select('candidate_id', 'total_score', 'passed')
+            ->get()
+            ->keyBy('candidate_id');
+
+        // Batch load investigation recommendations
+        $investigations = DB::table('home_investigations')
+            ->whereIn('candidate_id', $candidateIds)
+            ->select('candidate_id', 'recommendation', 'summary')
+            ->get()
+            ->keyBy('candidate_id');
+
         // Enrich with candidate info
         $enriched = [];
         foreach ($tallies as $tally) {
-            $candidate = Candidate::find($tally['candidate_id']);
+            $candidate = $candidates->get($tally['candidate_id']);
+            $myVote = $myVotes->get($tally['candidate_id']);
+            $exam = $examScores->get($tally['candidate_id']);
+            $assessment = $assessments->get($tally['candidate_id']);
+            $investigation = $investigations->get($tally['candidate_id']);
+
             $enriched[] = array_merge($tally, [
                 'candidate_name' => $candidate ? $candidate->first_name . ' ' . $candidate->last_name : 'Unknown',
+                'candidate_photo' => $candidate?->photo_url,
+                'candidate_gender' => $candidate?->gender,
+                'candidate_phone' => $candidate?->phone,
+                'candidate_school' => $candidate?->school_name,
+                'candidate_province' => $candidate?->province?->name,
+                'candidate_ngo' => $candidate?->referringNgo?->name,
+                'candidate_status' => $candidate?->status,
+                'exam_score' => $exam ? round((float) $exam->avg_score, 2) : null,
+                'exam_rank' => $exam ? (int) $exam->rank : null,
+                'assessment_percent' => $assessment ? (float) $assessment->total_score : null,
+                'assessment_passed' => $assessment ? (bool) $assessment->passed : null,
+                'investigation_recommendation' => $investigation?->recommendation,
+                'investigation_summary' => $investigation?->summary,
+                'my_vote' => $myVote ? $myVote->decision->value : null,
             ]);
         }
 
@@ -292,6 +351,49 @@ class VotingRoundController extends Controller
             'quorum' => $quorum,
             'candidates' => $enriched,
         ], 'Tally retrieved successfully');
+    }
+
+    /**
+     * PUT /voting-rounds/{votingRound}/candidates/{cid}/status
+     * Update a candidate's selection status (Select or Reject).
+     * Super Admin / Selection Manager only.
+     */
+    public function updateCandidateStatus(Request $request, VotingRound $votingRound, int $cid): JsonResponse
+    {
+        $this->authorizeManager();
+
+        $votingRound->syncStatus();
+
+        $validated = $request->validate([
+            'status' => 'required|string|in:Selected,Not Selected',
+        ]);
+
+        $candidate = Candidate::find($cid);
+        if (! $candidate) {
+            return ApiResponse::notFound('Candidate not found.');
+        }
+
+        // Verify candidate is in this round
+        $exists = $votingRound->candidates()->where('candidate_id', $cid)->exists();
+        if (! $exists) {
+            return ApiResponse::error('Candidate is not in this voting round.', 422);
+        }
+
+        $candidate->update(['status' => $validated['status']]);
+
+        // Record status history (only when status actually changes)
+        CandidateStatusHistory::create([
+            'candidate_id' => $candidate->id,
+            'status' => $validated['status'],
+            'changed_by' => Auth::id(),
+            'changed_at' => now(),
+        ]);
+
+        return ApiResponse::success([
+            'candidate_id' => $cid,
+            'status' => $validated['status'],
+            'candidate_name' => $candidate->first_name . ' ' . $candidate->last_name,
+        ], 'Candidate status updated successfully');
     }
 
     /**
@@ -424,19 +526,18 @@ class VotingRoundController extends Controller
     protected function enrichCandidateProfile(Candidate $candidate, VotingRound $round): array
     {
         // Get exam scores (aggregate from exam_results)
+        // exam_subjects has campaign_id directly — no separate 'exams' table
         $examScore = DB::table('exam_results')
             ->join('exam_subjects', 'exam_results.subject_id', '=', 'exam_subjects.id')
-            ->join('exams', 'exam_subjects.exam_id', '=', 'exams.id')
             ->where('exam_results.candidate_id', $candidate->id)
-            ->where('exams.campaign_id', $round->campaign_id)
+            ->where('exam_subjects.campaign_id', $round->campaign_id)
             ->avg('exam_results.final_score');
 
         // Get exam rank (overall rank from candidate_rank if exists, else from first subject)
         $examRank = DB::table('exam_results')
             ->join('exam_subjects', 'exam_results.subject_id', '=', 'exam_subjects.id')
-            ->join('exams', 'exam_subjects.exam_id', '=', 'exams.id')
             ->where('exam_results.candidate_id', $candidate->id)
-            ->where('exams.campaign_id', $round->campaign_id)
+            ->where('exam_subjects.campaign_id', $round->campaign_id)
             ->value('exam_results.rank');
 
         // Get assessment score

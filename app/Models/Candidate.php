@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Candidate extends Model
@@ -31,7 +32,7 @@ class Candidate extends Model
         'dob' => 'date',
     ];
 
-    protected $appends = ['code'];
+    protected $appends = ['code', 'exam_score', 'exam_result'];
 
     /**
      * Get the candidate's code (alias for student_id).
@@ -76,6 +77,39 @@ class Candidate extends Model
         return str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
+    /**
+     * Get the candidate's average exam score across all subjects.
+     */
+    public function getExamScoreAttribute(): ?float
+    {
+        // Average final_score across all exam results for this candidate
+        $avg = \Illuminate\Support\Facades\DB::table('exam_results')
+            ->where('candidate_id', $this->id)
+            ->avg('final_score');
+
+        return $avg ? round((float) $avg, 2) : null;
+    }
+
+    /**
+     * Get the candidate's exam result (pass/fail) based on thresholds.
+     */
+    public function getExamResultAttribute(): ?string
+    {
+        $score = $this->exam_score;
+        if ($score === null) {
+            return null;
+        }
+
+        // Check if there's an overall threshold for this campaign
+        $threshold = \App\Models\ExamThreshold::where('campaign_id', $this->campaign_id)
+            ->whereNull('subject_id')
+            ->first();
+
+        $passMark = $threshold ? (float) $threshold->overall_pass_mark : 50;
+
+        return $score >= $passMark ? 'pass' : 'fail';
+    }
+
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(SelectCampaing::class, 'campaign_id');
@@ -98,5 +132,11 @@ class Candidate extends Model
     public function homeInvestigation(): HasOne
     {
         return $this->hasOne(HomeInvestigation::class, 'candidate_id');
+    }
+
+    public function votingRounds(): BelongsToMany
+    {
+        return $this->belongsToMany(VotingRound::class, 'voting_round_candidates', 'candidate_id', 'voting_round_id')
+            ->withTimestamps();
     }
 }

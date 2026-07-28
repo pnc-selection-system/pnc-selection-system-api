@@ -24,4 +24,5 @@ Route::middleware('jwt.auth')->prefix('voting-rounds')->group(function () {
     Route::get('{votingRound}/tally', [VotingRoundController::class, 'tally']);
     Route::post('{votingRound}/lock', [VotingRoundController::class, 'lock']);
     Route::get('{votingRound}/results', [VotingRoundController::class, 'results']);
+    Route::put('{votingRound}/candidates/{cid}/status', [VotingRoundController::class, 'updateCandidateStatus']);
 });

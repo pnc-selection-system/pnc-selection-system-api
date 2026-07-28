@@ -62,6 +62,20 @@ class CandidateController extends Controller
     /**
      * Upload or update a candidate's profile photo.
      */
+    public function statusHistory(Candidate $candidate): JsonResponse
+    {
+        $history = $this->candidateService->statusHistory($candidate);
+
+        return ApiResponse::success($history, 'Status history retrieved successfully');
+    }
+
+    public function assessmentResult(Candidate $candidate): JsonResponse
+    {
+        $result = $this->candidateService->assessmentResult($candidate);
+
+        return ApiResponse::success($result, 'Assessment result retrieved successfully');
+    }
+
     public function uploadPhoto(Request $request, Candidate $candidate): JsonResponse
     {
         $request->validate([

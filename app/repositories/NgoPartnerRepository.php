@@ -3,6 +3,7 @@
 namespace Repositories;
 
 use App\Models\Candidate;
+use App\Models\CommunicationLog;
 use App\Models\NgoContactPersion;
 use App\Models\NgoPartner;
 use Illuminate\Database\Eloquent\Collection;
