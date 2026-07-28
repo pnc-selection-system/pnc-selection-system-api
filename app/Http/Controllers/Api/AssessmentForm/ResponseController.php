@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AssessmentForm;
 use App\Models\AssessmentRespone;
 use App\Models\Cadidate;
-use App\Repositories\CandidateRepository;
+use Repositories\CandidateRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
