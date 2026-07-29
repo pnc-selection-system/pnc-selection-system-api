@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Admin Dashboard — PNC Selection System v2</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        /* ─── Login screen ─────────────────────────────────── */
+        .login-screen {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 20px;
+        }
+        .login-screen.hidden { display: none; }
+
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .login-card h1 {
+            font-size: 24px;
+            color: #1a1a2e;
+            margin-bottom: 4px;
+        }
+        .login-card .subtitle {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .login-card .credentials-hint {
+            background: #f8f9ff;
+            border: 1px solid #e8eaff;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        .login-card .credentials-hint strong { color: #4361ee; }
+
+        /* ─── Dashboard ────────────────────────────────────── */
+        .dashboard { display: none; }
+        .dashboard.show { display: block; }
+
+        .topbar {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 0 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .topbar .logo {
+            font-weight: 700;
+            font-size: 18px;
+            color: #1a1a2e;
+        }
+        .topbar .logo span { color: #4361ee; }
+        .topbar .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 14px;
+        }
+        .topbar .user-info .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #4361ee;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .topbar .logout-btn {
+            background: none;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #666;
+            transition: all 0.15s;
+        }
+        .topbar .logout-btn:hover {
+            background: #f5f5f5;
+            color: #c62828;
+            border-color: #c62828;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* ─── Cards ────────────────────────────────────────── */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ─── Two column ───────────────────────────────────── */
+        .row {
+            display: flex;
+            gap: 24px;
+        }
+        .col-form { flex: 0 0 380px; }
+        .col-list { flex: 1; min-width: 0; }
+
+        /* ─── Form ─────────────────────────────────────────── */
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #444;
+            margin-bottom: 6px;
+        }
+        .form-group label .required { color: #e53935; }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #4361ee;
+            box-shadow: 0 0 0 3px rgba(67,97,238,0.12);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-primary {
+            background: #4361ee;
+            color: white;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: #3a56d4;
+            transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+            background: #a0b0f0;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover { background: #5a6268; }
+
+        /* ─── Messages ─────────────────────────────────────── */
+        .msg {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-top: 12px;
+            display: none;
+        }
+        .msg.show { display: block; }
+        .msg.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .msg.error { background: #fbe9e7; color: #c62828; border: 1px solid #ffccbc; }
+        .msg.info { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+
+        /* ─── Users Table ──────────────────────────────────── */
+        .table-wrap {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        th {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 2px solid #e9ecef;
+            color: #555;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        tr:hover td { background: #f8f9ff; }
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-admin { background: #e8f4fd; color: #0d6efd; }
+        .badge-manager { background: #fff3cd; color: #856404; }
+        .badge-officer { background: #d4edda; color: #155724; }
+        .badge-active { background: #d4edda; color: #155724; }
+        .badge-inactive { background: #f8d7da; color: #721c24; }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .user-count {
+            font-size: 13px;
+            color: #666;
+            margin-left: auto;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .row { flex-direction: column; }
+            .col-form { flex: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN SCREEN ═══════════════ -->
+<div id="loginScreen" class="login-screen">
+    <div class="login-card">
+        <h1>🔐 Admin Login</h1>
+        <p class="subtitle">PNC Selection System — Admin Panel</p>
+
+        <div class="credentials-hint">
+            <strong>👑 Admin Account</strong><br>
+            Email: <code>admin@gmail.com</code><br>
+            Password: <code>admin123</code>
+        </div>
+
+        <form onsubmit="adminLogin(); return false;">
+            <div class="form-group">
+                <label for="adminEmail">Email</label>
+                <input type="email" id="adminEmail" value="admin@gmail.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="adminPassword">Password</label>
+                <input type="password" id="adminPassword" value="admin123" autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary" id="loginBtn">🔑 Login as Admin</button>
+        </form>
+        <div id="loginMsg" class="msg"></div>
+    </div>
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div id="dashboard" class="dashboard">
+    <!-- Top Bar -->
+    <div class="topbar">
+        <div class="logo">PNC <span>Admin</span> <span style="font-size:10px;color:#999;font-weight:400;margin-left:8px;">v2</span></div>
+        <div id="sessionStatus" style="font-size:12px;color:#666;padding:2px 10px;background:#f8f9fa;border-radius:4px;">Checking session...</div>
+        <div class="user-info">
+            <span id="adminName">Admin</span>
+            <div class="avatar" id="adminAvatar">A</div>
+            <button class="logout-btn" onclick="adminLogout()">🚪 Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <!-- LEFT: Create User Form -->
+            <div class="col-form">
+                <div class="card">
+                    <div class="card-title">👤 Create New User</div>
+
+                    <form onsubmit="createUser(event)">
+                        <div class="form-group">
+                            <label for="name">Name <span class="required">*</span></label>
+                            <input type="text" id="name" placeholder="e.g. Sok Keang" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email <span class="required">*</span></label>
+                            <input type="email" id="email" placeholder="e.g. sokkeang@gmail.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password <span class="required">*</span></label>
+                            <input type="text" id="password" placeholder="Min 6 characters" value="123456" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="role_id">Role <span class="required">*</span></label>
+                            <select id="role_id">
+                                <option value="1">👑 Admin</option>
+                                <option value="2" selected>👔 Manager</option>
+                                <option value="3">🛡️ Officer</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="createBtn">
+                            ✨ Create User
+                        </button>
+                    </form>
+
+                    <div id="createMsg" class="msg"></div>
+
+                    <!-- Show created user credentials -->
+                    <div id="createdInfo" style="display:none;margin-top:16px;padding:14px;background:#f8f9ff;border-radius:8px;border:1px solid #e8eaff;font-size:13px;line-height:1.6;">
+                        <strong style="color:#2e7d32;">✅ User Created!</strong><br>
+                        <span id="createdName"></span><br>
+                        <span id="createdEmail"></span><br>
+                        <span id="createdPassword"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Users List -->
+            <div class="col-list">
+                <div class="card">
+                    <div class="card-title">
+                        👥 All Users
+                        <span id="userCount" class="user-count"></span>
+                        <button class="btn btn-secondary" onclick="fetchUsers()" style="margin-left:auto;padding:5px 12px;font-size:12px;">🔄 Refresh</button>
+                    </div>
+                    <div id="userListContainer">
+                        <div class="empty-state">
+                            <div class="icon">📋</div>
+                            <p>Click <strong>"Create User"</strong> to add users</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ─── Helpers ────────────────────────────────────────────
+    const API = window.location.protocol === 'file:'
+        ? 'http://localhost:8000'
+        : '';
+
+    function getToken() { return localStorage.getItem('admin_token'); }
+    function setToken(t) { localStorage.setItem('admin_token', t); }
+    function clearToken() { localStorage.removeItem('admin_token'); }
+
+    function showMsg(el, type, html) {
+        el.className = 'msg show ' + type;
+        el.innerHTML = html;
+    }
+    function hideMsg(el) {
+        el.className = 'msg';
+        el.innerHTML = '';
+    }
+
+    function escapeHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
+
+    // ─── Admin Login ────────────────────────────────────────
+    async function adminLogin() {
+        const btn = document.getElementById('loginBtn');
+        const msg = document.getElementById('loginMsg');
+        hideMsg(msg);
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Logging in...';
+
+        const email = document.getElementById('adminEmail').value.trim();
+        const password = document.getElementById('adminPassword').value;
+
+        try {
+            const res = await fetch(API + '/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                showMsg(msg, 'error', '❌ ' + (data.message || 'Login failed'));
+                btn.disabled = false;
+                btn.textContent = '🔑 Login as Admin';
+                return;
+            }
+
+            // Save token
+            setToken(data.data.access_token);
+
+            // Show dashboard
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('show');
+
+            document.getElementById('adminName').textContent = data.data.user.name;
+            document.getElementById('adminAvatar').textContent = data.data.user.name.charAt(0).toUpperCase();
+
+            // Fetch users
+            await fetchUsers();
+
+        } catch (err) {
+            showMsg(msg, 'error', '❌ Network error: ' + err.message + '<br>Make sure the server is running on <strong>http://localhost:8000</strong>');
+        }
+
+        btn.disabled = false;
+        btn.textContent = '🔑 Login as Admin';
+    }
+
+    // ─── Admin Logout ───────────────────────────────────────
+    function adminLogout(reason) {
+        clearToken();
+        document.getElementById('dashboard').classList.remove('show');
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.getElementById('createdInfo').style.display = 'none';
+        // Show a helpful message when session expires
+        if (reason === 'expired') {
+            document.getElementById('loginMsg').className = 'msg show info';
+            document.getElementById('loginMsg').innerHTML = '⏰ <strong>Session expired.</strong> All your users are still saved in the database. Just login again to continue.';
+        }
+    }
+
+    // ─── Create User (as Admin) ─────────────────────────────
+    async function createUser(e) {
+        e.preventDefault();
+        const btn = document.getElementById('createBtn');
+        const msg = document.getElementById('createMsg');
+        const createdInfo = document.getElementById('createdInfo');
+        hideMsg(msg);
+        createdInfo.style.display = 'none';
+
+        btn.disabled = true;
+        btn.textContent = '⏳ Creating...';
+
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const role_id = document.getElementById('role_id').value;
+
+        if (!name || !email || !password) {
+            showMsg(msg, 'error', 'Please fill in all required fields');
+            btn.disabled = false;
+            btn.textContent = '✨ Create User';
+            return;
+        }
+
+        const token = getToken();
+        if (!token) {
+            showMsg(msg, 'error', 'Session expired. Please login again.');
+            btn.disabled = false;
+            btn.textContent = '✨ Create User';
+            return;
+        }
+
+        try {
+            const res = await fetch(API + '/api/setup/users-roles/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ name, email, password, role_id })
+            });
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                const errMsg = data.message || data.error || JSON.stringify(data);
+                showMsg(msg, 'error', '❌ ' + errMsg);
+                btn.disabled = false;
+                btn.textContent = '✨ Create User';
+                return;
+            }
+
+            // Show success
+            showMsg(msg, 'success', '✅ <strong>User created successfully!</strong>');
+            document.getElementById('createdName').innerHTML = '👤 Name: <strong>' + escapeHtml(name) + '</strong>';
+            document.getElementById('createdEmail').innerHTML = '📧 Email: <strong>' + escapeHtml(email) + '</strong>';
+            document.getElementById('createdPassword').innerHTML = '🔑 Password: <strong>' + escapeHtml(password) + '</strong>';
+            createdInfo.style.display = 'block';
+
+            // Refresh user list
+            await fetchUsers();
+
+            // Clear form for next user
+            document.getElementById('name').value = '';
+            document.getElementById('email').value = '';
+
+        } catch (err) {
+            showMsg(msg, 'error', '❌ Network error: ' + err.message);
+        }
+
+        btn.disabled = false;
+        btn.textContent = '✨ Create User';
+    }
+
+    // ─── Fetch Users List ───────────────────────────────────
+    async function fetchUsers() {
+        const container = document.getElementById('userListContainer');
+        const countEl = document.getElementById('userCount');
+        const statusEl = document.getElementById('sessionStatus');
+        const token = getToken();
+
+        if (!token) {
+            container.innerHTML = '<div class="empty-state"><div class="icon">🔑</div><p>Please login first</p></div>';
+            return;
+        }
+
+        container.innerHTML = '<div class="loading">⏳ Loading users...</div>';
+
+        try {
+            const res = await fetch(API + '/api/setup/users-roles/users/all', {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Accept': 'application/json'
+                },
+                // Prevent caching
+                cache: 'no-store'
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                if (res.status === 401) {
+                    statusEl.textContent = '⏰ Session expired';
+                    statusEl.style.background = '#f8d7da';
+                    adminLogout('expired');
+                    container.innerHTML = '<div class="empty-state"><div class="icon">⏰</div><p>Session expired. Login again.</p></div>';
+                } else if (res.status === 403) {
+                    statusEl.textContent = '⛔ No permission';
+                    statusEl.style.background = '#f8d7da';
+                    container.innerHTML = '<div class="empty-state"><div class="icon">⛔</div><p>You need Admin permission to view users.</p></div>';
+                } else {
+                    statusEl.textContent = '⚠️ Error ' + res.status;
+                    statusEl.style.background = '#f8d7da';
+                    container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Error: ' + (data.message || res.status) + '</p></div>';
+                }
+                return;
+            }
+
+            const users = data.data || [];
+            countEl.textContent = '(' + users.length + ' total)';
+            statusEl.textContent = '✅ Logged in as Admin — ' + users.length + ' users';
+            statusEl.style.background = '#e8f5e9';
+
+            if (users.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="icon">👤</div><p>No users yet</p></div>';
+                return;
+            }
+
+            let html = '<div class="table-wrap"><table><thead><tr>' +
+                '<th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th>' +
+                '</tr></thead><tbody>';
+
+            try {
+                users.forEach(u => {
+                    const roleName = (u.role && u.role.name) || 'Unknown';
+                    const roleClass = 'badge-' + roleName.toLowerCase();
+                    const isActive = u.active !== false;
+                    const created = u.created_at ? new Date(u.created_at).toLocaleDateString() : '-';
+
+                    html += '<tr>' +
+                        '<td><strong>#' + u.id + '</strong></td>' +
+                        '<td>' + escapeHtml(u.name) + '</td>' +
+                        '<td>' + escapeHtml(u.email) + '</td>' +
+                        '<td><span class="badge ' + roleClass + '">' + roleName + '</span></td>' +
+                        '<td><span class="badge ' + (isActive ? 'badge-active' : 'badge-inactive') + '">' +
+                            (isActive ? 'Active' : 'Inactive') + '</span></td>' +
+                        '<td>' + created + '</td>' +
+                        '</tr>';
+                });
+            } catch (renderErr) {
+                console.error('🔴 Error rendering user row:', renderErr);
+                html += '<tr><td colspan="6" style="color:red;">⚠️ Error rendering some users. Check console.</td></tr>';
+            }
+
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+
+        } catch (err) {
+            statusEl.textContent = '❌ Network error';
+            statusEl.style.background = '#f8d7da';
+            container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><p>Network error: ' + err.message + '</p></div>';
+        }
+    }
+
+    // ─── Show diagnostic info in the console ───────────────
+    function showDiagnostics() {
+        const token = getToken();
+        console.log('🔍 Page loaded at:', new Date().toLocaleTimeString());
+        console.log('🔍 Token in localStorage:', token ? token.substring(0, 20) + '...' : 'NONE');
+        console.log('🔍 Page URL:', window.location.href);
+        console.log('🔍 API base:', API || '(relative)');
+        if (token) {
+            // Try to decode token payload (JWT is base64-encoded)
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                console.log('🔍 Token user ID:', payload.sub);
+                console.log('🔍 Token role_id:', payload.role_id);
+                console.log('🔍 Token expires:', new Date(payload.exp * 1000).toLocaleString());
+            } catch(e) {
+                console.log('🔍 Could not decode token payload');
+            }
+        }
+    }
+
+    // ─── Check saved session on load ────────────────────────
+    (function() {
+        showDiagnostics();
+        const token = getToken();
+        const statusEl = document.getElementById('sessionStatus');
+        if (token) {
+            statusEl.textContent = '🔑 Session found — loading users...';
+            statusEl.style.background = '#e8f5e9';
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('show');
+            fetchUsers();
+        } else {
+            statusEl.textContent = '🔓 Not logged in';
+            statusEl.style.background = '#fff3cd';
+            console.log('🔍 No token found — showing login screen');
+        }
+    })();
+</script>
+</body>
+</html>

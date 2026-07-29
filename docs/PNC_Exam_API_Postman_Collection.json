@@ -1,0 +1,1024 @@
+{
+	"info": {
+		"name": "PNC Selection System - Exam API",
+		"description": "Complete Postman collection for testing all exam-related API endpoints in the PNC Selection System.\n\n## Setup\n1. Import this collection into Postman\n2. Set the `base_url` and `token` collection variables\n3. Run the **Login** request first to get a Bearer token (auto-saved to variable)\n\n## Test Flow (Suggested Order)\n1. Login\n2. Create Campaign (via Campaign endpoints)\n3. Create Exam Subjects (weights should sum to 100%)\n4. Validate Weights\n5. Create Exam\n6. Get Exam Config\n7. Upload & Validate Import\n8. Apply Thresholds\n9. Get Rankings & Stats\n10. Publish Results\n11. Recalculate Results (Super Admin only)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000/api",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "exam_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "subject_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "subject_id_2",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "subject_id_3",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "campaign_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "import_file_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Authentication",
+			"description": "Authentication endpoints using JWT. Login first to obtain a Bearer token.",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.access_token) {",
+									"    pm.collectionVariables.set('token', jsonData.data.access_token);",
+									"    console.log('Token saved successfully');",
+									"}",
+									"",
+									"if (jsonData.data && jsonData.data.user) {",
+									"    pm.collectionVariables.set('user_role', jsonData.data.user.role_id);",
+									"}",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"admin@example.com\",\n    \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						},
+						"description": "Authenticate a user and get a JWT token. The token is auto-saved to the `token` collection variable."
+					}
+				},
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/profile",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "profile"]
+						},
+						"description": "Get the authenticated user's profile. Useful to verify your token is valid."
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Exams (CRUD)",
+			"description": "Full CRUD operations for exams. All endpoints require authentication.",
+			"item": [
+				{
+					"name": "List Exams",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exams",
+							"host": ["{{base_url}}"],
+							"path": ["exams"]
+						},
+						"description": "Get a list of all exams. Supports pagination with `?page=1&per_page=15`."
+					}
+				},
+				{
+					"name": "Create Exam",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.id) {",
+									"    pm.collectionVariables.set('exam_id', jsonData.data.id);",
+									"    console.log('Exam ID saved:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"campaign_id\": {{campaign_id}},\n    \"exam_date\": \"2026-07-15\",\n    \"publish_status\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exams",
+							"host": ["{{base_url}}"],
+							"path": ["exams"]
+						},
+						"description": "Create a new exam record. campaign_id must reference an existing campaign."
+					}
+				},
+				{
+					"name": "Show Exam",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exams/{{exam_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exams", "{{exam_id}}"]
+						},
+						"description": "Get the details of a single exam by ID."
+					}
+				},
+				{
+					"name": "Update Exam",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"exam_date\": \"2026-07-20\",\n    \"publish_status\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exams/{{exam_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exams", "{{exam_id}}"]
+						},
+						"description": "Update an exam's fields (partial update supported)."
+					}
+				},
+				{
+					"name": "Delete Exam",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exams/{{exam_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exams", "{{exam_id}}"]
+						},
+						"description": "Delete an exam by ID."
+					}
+				}
+			]
+		},
+		{
+			"name": "3. Exam Subjects (CRUD)",
+			"description": "Manage exam subjects. Create at least 2-3 subjects per campaign with weights summing to 100%.",
+			"item": [
+				{
+					"name": "List Subjects",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exam-subjects?campaign_id={{campaign_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects"],
+							"query": [
+								{
+									"key": "campaign_id",
+									"value": "{{campaign_id}}",
+									"description": "Optional: filter subjects by campaign"
+								}
+							]
+						},
+						"description": "List all exam subjects, optionally filtered by `?campaign_id=`."
+					}
+				},
+				{
+					"name": "Create Subject - Mathematics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.id) {",
+									"    pm.collectionVariables.set('subject_id', jsonData.data.id.toString());",
+									"    console.log('Subject ID (Mathematics) saved:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"campaign_id\": {{campaign_id}},\n    \"name\": \"Mathematics\",\n    \"max_score\": 100,\n    \"weight\": 40,\n    \"deduction_rules\": {\n        \"wrong_answer\": -0.25,\n        \"unanswered\": 0,\n        \"negative_marking\": false,\n        \"partial_credit\": 0.5\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-subjects",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects"]
+						},
+						"description": "Create an exam subject with deduction rules. Weight = 40%."
+					}
+				},
+				{
+					"name": "Create Subject - English",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.id) {",
+									"    pm.collectionVariables.set('subject_id_2', jsonData.data.id.toString());",
+									"    console.log('Subject ID (English) saved:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"campaign_id\": {{campaign_id}},\n    \"name\": \"English\",\n    \"max_score\": 100,\n    \"weight\": 30,\n    \"deduction_rules\": {\n        \"wrong_answer\": 0,\n        \"unanswered\": 0,\n        \"negative_marking\": true,\n        \"partial_credit\": 0\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-subjects",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects"]
+						},
+						"description": "Create another subject. Weight = 30%."
+					}
+				},
+				{
+					"name": "Create Subject - Science",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.id) {",
+									"    pm.collectionVariables.set('subject_id_3', jsonData.data.id.toString());",
+									"    console.log('Subject ID (Science) saved:', jsonData.data.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"campaign_id\": {{campaign_id}},\n    \"name\": \"Science\",\n    \"max_score\": 100,\n    \"weight\": 30,\n    \"deduction_rules\": {\n        \"wrong_answer\": -0.5,\n        \"unanswered\": -0.25,\n        \"negative_marking\": false,\n        \"partial_credit\": 0.75\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-subjects",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects"]
+						},
+						"description": "Create a third subject. Weight = 30% (total: 40+30+30 = 100%)."
+					}
+				},
+				{
+					"name": "Show Subject",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exam-subjects/{{subject_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects", "{{subject_id}}"]
+						},
+						"description": "Show a single exam subject by ID."
+					}
+				},
+				{
+					"name": "Update Subject",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Mathematics (Updated)\",\n    \"max_score\": 100,\n    \"weight\": 40,\n    \"deduction_rules\": {\n        \"wrong_answer\": -0.5,\n        \"unanswered\": 0,\n        \"negative_marking\": true,\n        \"partial_credit\": 0.5\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-subjects/{{subject_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects", "{{subject_id}}"]
+						},
+						"description": "Update a subject's name, max_score, weight, or deduction_rules."
+					}
+				},
+				{
+					"name": "Validate Weights",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exam-subjects/validate-weights/{{campaign_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects", "validate-weights", "{{campaign_id}}"]
+						},
+						"description": "Validate that subject weights sum to exactly 100%. Returns 200 if valid, 422 if not. Run this before publishing results."
+					}
+				},
+				{
+					"name": "Delete Subject",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exam-subjects/{{subject_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects", "{{subject_id}}"]
+						},
+						"description": "Delete a subject by ID."
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Exam Config",
+			"description": "Exam configuration: get full config, set pass thresholds, and preview scoring.",
+			"item": [
+				{
+					"name": "Get Exam Config",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exam-config/{{campaign_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exam-config", "{{campaign_id}}"]
+						},
+						"description": "Get full exam configuration for a campaign: campaign details, all subjects (with thresholds if set), and overall threshold."
+					}
+				},
+				{
+					"name": "Update Thresholds",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"thresholds\": [\n        {\n            \"subject_id\": null,\n            \"pass_score\": 50\n        },\n        {\n            \"subject_id\": {{subject_id}},\n            \"pass_score\": 30\n        },\n        {\n            \"subject_id\": {{subject_id_2}},\n            \"pass_score\": 40\n        },\n        {\n            \"subject_id\": {{subject_id_3}},\n            \"pass_score\": 35\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-config/{{campaign_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["exam-config", "{{campaign_id}}"]
+						},
+						"description": "Upsert thresholds. `subject_id: null` = overall threshold. Pass thresholds per subject. Returns the full updated config."
+					}
+				},
+				{
+					"name": "Preview Scoring",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"scores\": [\n        {\n            \"subject_id\": {{subject_id}},\n            \"raw_score\": 85\n        },\n        {\n            \"subject_id\": {{subject_id_2}},\n            \"raw_score\": 70\n        },\n        {\n            \"subject_id\": {{subject_id_3}},\n            \"raw_score\": 90\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-config/{{campaign_id}}/preview",
+							"host": ["{{base_url}}"],
+							"path": ["exam-config", "{{campaign_id}}", "preview"]
+						},
+						"description": "Preview how scores map to weighted results before committing. Takes raw scores and returns per-subject weighted scores, overall percentage, pass/fail status."
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Exam Import (ZipGrade)",
+			"description": "Import exam results from ZipGrade-exported CSV/XLSX files. Two-step flow: upload → map columns → validate.",
+			"item": [
+				{
+					"name": "Upload Import File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.import_id) {",
+									"    pm.collectionVariables.set('import_file_id', jsonData.data.import_id.toString());",
+									"    console.log('Import File ID saved:', jsonData.data.import_id);",
+									"    console.log('Detected columns:', JSON.stringify(jsonData.data.detected_columns));",
+									"    console.log('Sample rows:', JSON.stringify(jsonData.data.sample_rows));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "sample_grades.csv",
+									"description": "CSV or XLSX file exported from ZipGrade. Max 10MB."
+								},
+								{
+									"key": "campaign_id",
+									"value": "{{campaign_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-import/upload",
+							"host": ["{{base_url}}"],
+							"path": ["exam-import", "upload"]
+						},
+						"description": "Upload a CSV/XLSX file exported from ZipGrade. Returns detected columns with sample values and system fields for mapping.\n\n**Please select a CSV file from your computer for the 'file' field.**"
+					}
+				},
+				{
+					"name": "Validate Import",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"column_mapping\": {\n        \"student_name\": 0,\n        \"student_id\": 1,\n        \"subject_name\": 2,\n        \"score\": 3,\n        \"total_questions\": 4,\n        \"correct_count\": null,\n        \"wrong_count\": null,\n        \"unanswered_count\": null,\n        \"percentage\": null,\n        \"grade\": null,\n        \"exam_date\": null\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-import/{{import_file_id}}/validate",
+							"host": ["{{base_url}}"],
+							"path": ["exam-import", "{{import_file_id}}", "validate"]
+						},
+						"description": "Validate the column mapping against previously uploaded data. Adjust column indices based on what was detected in the upload step.\n\nReturns a per-row validation report with:\n- Student matching status\n- Subject matching status\n- Score validation (non-negative, within max_score)\n- Duplicate detection warnings\n- Summary statistics"
+					}
+				}
+			]
+		},
+		{
+			"name": "6. Exam Results",
+			"description": "View rankings, statistics, apply thresholds, publish/lock results, and trigger audited recalculations.",
+			"item": [
+				{
+					"name": "Get Rankings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exam-results/{{campaign_id}}/ranking",
+							"host": ["{{base_url}}"],
+							"path": ["exam-results", "{{campaign_id}}", "ranking"]
+						},
+						"description": "Get overall ranking (by overall_percentage) and per-subject rankings (by final_score) for the campaign."
+					}
+				},
+				{
+					"name": "Get Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exam-results/{{campaign_id}}/stats",
+							"host": ["{{base_url}}"],
+							"path": ["exam-results", "{{campaign_id}}", "stats"]
+						},
+						"description": "Get campaign-level exam statistics: pass rate, average, min/max percentages, and by-province breakdown."
+					}
+				},
+				{
+					"name": "Apply Thresholds",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-results/{{campaign_id}}/apply-thresholds",
+							"host": ["{{base_url}}"],
+							"path": ["exam-results", "{{campaign_id}}", "apply-thresholds"]
+						},
+						"description": "Apply configured thresholds to auto-set candidate status to EXAM_PASSED or EXAM_FAILED. Must have thresholds configured first (via PUT /exam-config/{id})."
+					}
+				},
+				{
+					"name": "Publish Results",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-results/{{campaign_id}}/publish",
+							"host": ["{{base_url}}"],
+							"path": ["exam-results", "{{campaign_id}}", "publish"]
+						},
+						"description": "Publish (lock) exam results. Transitions results from 'draft' to 'published' status.\n- Once published, normal edits are blocked\n- Returns number of affected subject + overall results\n- Call twice to test the 'already published' error (422)"
+					}
+				},
+				{
+					"name": "Recalculate Results (Super Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Recalculating after grade review meeting on 2026-07-15. Erroneous scores in Mathematics corrected.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-results/{{campaign_id}}/recalculate",
+							"host": ["{{base_url}}"],
+							"path": ["exam-results", "{{campaign_id}}", "recalculate"]
+						},
+						"description": "**Restricted to Super Admin (role_id = 1).**\n\nAudited recalculation that:\n1. Snapshots all current results to `result_snapshots` table\n2. Increments the version number\n3. Recalculates via ScoringServices\n4. Sets status back to 'published'\n5. Writes a detailed audit log\n\n**Requires a `reason` field** (min 10 characters)."
+					}
+				}
+			]
+		},
+		{
+			"name": "7. Error Test Cases",
+			"description": "Test common error scenarios to verify the API handles edge cases correctly.",
+			"item": [
+				{
+					"name": "Unauthenticated Request",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exams",
+							"host": ["{{base_url}}"],
+							"path": ["exams"]
+						},
+						"description": "**Expected: 401 Unauthorized** — Testing that missing/invalid token returns an error."
+					}
+				},
+				{
+					"name": "Not Found (Invalid ID)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exams/999999",
+							"host": ["{{base_url}}"],
+							"path": ["exams", "999999"]
+						},
+						"description": "**Expected: 404 Not Found** — Requesting a resource that doesn't exist."
+					}
+				},
+				{
+					"name": "Validation Error - Missing Required Fields",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"campaign_id\": null,\n    \"exam_date\": \"invalid\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exams",
+							"host": ["{{base_url}}"],
+							"path": ["exams"]
+						},
+						"description": "**Expected: 422 Validation Error** — Testing that invalid/missing fields return proper error messages."
+					}
+				},
+				{
+					"name": "Validate Weights - Wrong Sum",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/exam-subjects/validate-weights/999999",
+							"host": ["{{base_url}}"],
+							"path": ["exam-subjects", "validate-weights", "999999"]
+						},
+						"description": "**Expected: 404 or 422** — Testing validation with non-existent campaign or wrong weights."
+					}
+				},
+				{
+					"name": "Publish Already Published Results",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-results/{{campaign_id}}/publish",
+							"host": ["{{base_url}}"],
+							"path": ["exam-results", "{{campaign_id}}", "publish"]
+						},
+						"description": "**Expected: 422** — Run this after a successful publish to verify the 'already published' error."
+					}
+				},
+				{
+					"name": "Recalculate Without Reason",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"short\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/exam-results/{{campaign_id}}/recalculate",
+							"host": ["{{base_url}}"],
+							"path": ["exam-results", "{{campaign_id}}", "recalculate"]
+						},
+						"description": "**Expected: 422** — The `reason` field requires a minimum of 10 characters."
+					}
+				}
+			]
+		}
+	]
+}

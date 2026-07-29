@@ -6,7 +6,6 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UserSeeder extends Seeder
@@ -20,32 +19,38 @@ class UserSeeder extends Seeder
         $managerRole = Role::firstOrCreate(['id' => 2], ['name' => 'Manager']);
         $officerRole = Role::firstOrCreate(['id' => 3], ['name' => 'Officer']);
 
-        $admin = User::create([
-            'role_id' => $adminRole->id,
-            'name' => 'Super Admin',
-            'email' => 'admin@gmail.com',
-            'password' => Hash::make('admin123'),
-            'phone' => '0123456789',
-            'active' => true,
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
+                'role_id' => $adminRole->id,
+                'name' => 'Super Admin',
+                'password' => 'admin123',
+                'phone' => '0123456789',
+                'active' => true,
+            ]
+        );
 
-        $manager = User::create([
-            'role_id' => $managerRole->id,
-            'name' => 'Manager User',
-            'email' => 'manager@gmail.com',
-            'password' => Hash::make('manager123'),
-            'phone' => '0123456790',
-            'active' => true,
-        ]);
+        $manager = User::firstOrCreate(
+            ['email' => 'manager@gmail.com'],
+            [
+                'role_id' => $managerRole->id,
+                'name' => 'Manager User',
+                'password' => 'manager123',
+                'phone' => '0123456790',
+                'active' => true,
+            ]
+        );
 
-        $officer = User::create([
-            'role_id' => $officerRole->id,
-            'name' => 'Officer User',
-            'email' => 'officer@gmail.com',
-            'password' => Hash::make('officer123'),
-            'phone' => '0123456791',
-            'active' => true,
-        ]);
+        $officer = User::firstOrCreate(
+            ['email' => 'officer@gmail.com'],
+            [
+                'role_id' => $officerRole->id,
+                'name' => 'Officer User',
+                'password' => 'officer123',
+                'phone' => '0123456791',
+                'active' => true,
+            ]
+        );
 
         $adminToken = JWTAuth::fromUser($admin);
         $managerToken = JWTAuth::fromUser($manager);

@@ -2,9 +2,131 @@
 
 namespace App\Models;
 
+use App\Enums\VotingMethod;
+use App\Models\District;
+use App\Models\Province;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Date;
 
 class VotingRound extends Model
 {
-    //
+    protected $fillable = [
+        'campaign_id',
+        'province_id',
+        'district_id',
+        'name',
+        'voting_method',
+        'start_date',
+        'end_date',
+        'quorum',
+        'pass_threshold',
+        'waitlist_cap',
+        'total_members',
+        'status',
+        'locked_at',
+    ];
+
+    protected $casts = [
+        'status' => 'string',
+        'voting_method' => VotingMethod::class,
+        'locked_at' => 'datetime',
+        'start_date' => 'date:Y-m-d',
+        'end_date' => 'date:Y-m-d',
+        'quorum' => 'integer',
+        'pass_threshold' => 'integer',
+        'waitlist_cap' => 'integer',
+        'total_members' => 'integer',
+    ];
+
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(SelectCampaing::class, 'campaign_id');
+    }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class, 'province_id');
+    }
+
+    public function district(): BelongsTo
+    {
+        return $this->belongsTo(District::class, 'district_id');
+    }
+
+    public function candidates(): BelongsToMany
+    {
+        return $this->belongsToMany(Candidate::class, 'voting_round_candidates', 'voting_round_id', 'candidate_id')
+            ->withTimestamps();
+    }
+
+    public function votes(): HasMany
+    {
+        return $this->hasMany(Vote::class, 'voting_round_id');
+    }
+
+    /**
+     * Check if the round is locked (closed or past end_date).
+     */
+    public function isLocked(): bool
+    {
+        if ($this->status === 'Closed' || $this->locked_at !== null) {
+            return true;
+        }
+
+        // Auto-lock if end_date is in the past
+        if ($this->end_date && Date::today()->gt($this->end_date)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the round is currently open for voting.
+     * Must have status=Open and not be locked.
+     *
+     * Note: Date-based transitions (auto-open when start_date arrives,
+     * auto-close when end_date passes) are handled by syncStatus(),
+     * which is always called before this method.
+     */
+    public function isOpen(): bool
+    {
+        if ($this->isLocked()) {
+            return false;
+        }
+
+        if ($this->status !== 'Open') {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Automatically update the round status based on dates.
+     * Called before any voting operation.
+     */
+    public function syncStatus(): void
+    {
+        $now = Date::today();
+
+        // If end_date has passed, auto-close
+        if ($this->end_date && $now->gt($this->end_date) && $this->status !== 'Closed') {
+            $this->update([
+                'status' => 'Closed',
+                'locked_at' => $now,
+            ]);
+            return;
+        }
+
+        // If start_date has arrived and round is not already open, closed, or locked, auto-open
+        if ($this->start_date && ! $now->lt($this->start_date) && $this->status !== 'Open' && $this->status !== 'Closed' && $this->locked_at === null) {
+            $this->update([
+                'status' => 'Open',
+            ]);
+        }
+    }
 }

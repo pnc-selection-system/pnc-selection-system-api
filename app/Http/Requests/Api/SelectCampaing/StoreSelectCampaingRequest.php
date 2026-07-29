@@ -17,6 +17,8 @@ class StoreSelectCampaingRequest extends FormRequest
             'start_date'      => 'required|date',
             'end_date'        => 'required|date|after_or_equal:start_date',
             'status'          => ['sometimes', Rule::enum(CampaignStatus::class)],
+            'province_ids'    => 'required|array',
+            'province_ids.*'  => 'required|integer|exists:provinces,id',
         ];
     }
 }

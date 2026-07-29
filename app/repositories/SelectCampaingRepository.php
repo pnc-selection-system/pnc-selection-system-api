@@ -3,23 +3,23 @@
 namespace Repositories;
 
 use App\Models\SelectCampaing;
-use Illuminate\Database\Eloquent\Collection;
 
 class SelectCampaingRepository
 {
-    public function list(array $filters = []): Collection
+    public function list(array $filters = [])
     {
-        $query = SelectCampaing::query();
-
-        if (!empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        if (!empty($filters['year'])) {
-            $query->where('year', (int) $filters['year']);
-        }
-
-        return $query->latest()->get();
+        return SelectCampaing::select('id', 'name', 'year', 'condidate_total', 'province_total', 'start_date', 'end_date', 'status')
+            ->with('provinces:id,name')
+            ->when(
+                !empty($filters['status']),
+                fn($q) => $q->where('status', $filters['status'])
+            )
+            ->when(
+                !empty($filters['year']),
+                fn($q) => $q->where('year', (int) $filters['year'])
+            )
+            ->latest('id')
+            ->paginate($filters['per_page'] ?? 10);
     }
 
     public function create(array $data): SelectCampaing
@@ -29,19 +29,31 @@ class SelectCampaingRepository
 
     public function find(SelectCampaing $selectCampaing): SelectCampaing
     {
+        $selectCampaing->load('provinces:id,name');
+
         return $selectCampaing;
     }
-
     public function update(SelectCampaing $selectCampaing, array $data): SelectCampaing
     {
+        $provinceIds = $data['province_ids'] ?? null;
+        unset($data['province_ids']);
+
         $selectCampaing->update($data);
+
+        if ($provinceIds !== null) {
+            $selectCampaing->provinces()->sync($provinceIds);
+            $selectCampaing->province_total = count($provinceIds);
+            $selectCampaing->save();
+        }
+
         $selectCampaing->refresh();
+        $selectCampaing->load('provinces:id,name');
 
         return $selectCampaing;
     }
 
     public function delete(SelectCampaing $selectCampaing): void
     {
-        $selectCampaing->delete();
+        $selectCampaing->delete($selectCampaing);
     }
 }
