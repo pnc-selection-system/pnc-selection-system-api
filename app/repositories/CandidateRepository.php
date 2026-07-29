@@ -16,6 +16,8 @@ class CandidateRepository
         $examPassed = Candidate::where('status', 'Exam Passed')->count();
         $interestFail = Candidate::where('status', 'Interest Assessment Fail')->count();
         $investigating = Candidate::where('status', 'Investigating')->count();
+        $approved = Candidate::where('status', 'Approved')->count();
+        $selected = Candidate::where('status', 'Selected')->count();
 
         return [
             'total' => $total,
@@ -24,6 +26,8 @@ class CandidateRepository
             'exam_passed' => $examPassed,
             'interest_fail' => $interestFail,
             'investigating' => $investigating,
+            'approved' => $approved,
+            'selected' => $selected,
         ];
     }
 
