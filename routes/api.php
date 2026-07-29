@@ -26,3 +26,4 @@ require __DIR__.'/Role.php';
 require __DIR__.'/UserRole.php';
 require __DIR__.'/HomeInvestigation.php';
 require __DIR__.'/VotingRound.php';
+require __DIR__.'/ReportExport.php';

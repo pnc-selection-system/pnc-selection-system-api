@@ -86,7 +86,11 @@ class VotingRound extends Model
 
     /**
      * Check if the round is currently open for voting.
-     * Must be status=Open, within start_date..end_date, and not locked.
+     * Must have status=Open and not be locked.
+     *
+     * Note: Date-based transitions (auto-open when start_date arrives,
+     * auto-close when end_date passes) are handled by syncStatus(),
+     * which is always called before this method.
      */
     public function isOpen(): bool
     {
@@ -95,11 +99,6 @@ class VotingRound extends Model
         }
 
         if ($this->status !== 'Open') {
-            return false;
-        }
-
-        // Check if voting period has started
-        if ($this->start_date && Date::today()->lt($this->start_date)) {
             return false;
         }
 
@@ -119,6 +118,14 @@ class VotingRound extends Model
             $this->update([
                 'status' => 'Closed',
                 'locked_at' => $now,
+            ]);
+            return;
+        }
+
+        // If start_date has arrived and round is not already open, closed, or locked, auto-open
+        if ($this->start_date && ! $now->lt($this->start_date) && $this->status !== 'Open' && $this->status !== 'Closed' && $this->locked_at === null) {
+            $this->update([
+                'status' => 'Open',
             ]);
         }
     }

@@ -83,9 +83,7 @@ class InfoSessionRepository
             'province_id'         => $data['province_id'] ?? null,
             'district_id'         => $data['district_id'] ?? null,
             'commune_id'          => $data['commune_id'] ?? null,
-            'village_id'          => $data['village_id']
-                ?? \App\Models\Village::query()->value('id')
-                ?? throw new \RuntimeException('No villages found in database. Seed villages or run: php artisan migrate'),
+            'village_id'          => $data['village_id'] ?? null,
             'school'              => !empty($data['school']) ? $data['school'] : '-',
             'session_date'        => $data['session_date'],
             'session_time'        => !empty($data['session_time']) ? $data['session_time'] : '00:00:00',

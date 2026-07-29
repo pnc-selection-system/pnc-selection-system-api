@@ -132,7 +132,7 @@ class PermissionSeeder extends Seeder
             array_intersect_key($createdIds, array_flip($managerPerms))
         );
 
-        // ---- Officer: Edit candidate only ----
+        // ---- Officer: View and manage assigned candidates ----
         $officerPerms = [
             'campaigns.view',
             'sessions.view',
@@ -141,6 +141,7 @@ class PermissionSeeder extends Seeder
             'assessment.view',
             'homeinv.view',
             'voting.view',
+            'reports.view', 'reports.export',
         ];
         $officer->permissions()->sync(
             array_intersect_key($createdIds, array_flip($officerPerms))

@@ -106,7 +106,7 @@ class DatabaseSeeder extends Seeder
                 'voting.view', 'voting.manage',
                 'sessions.view', 'sessions.manage',
                 'schools.view',
-                'reports.view',
+                'reports.view', 'reports.export',
             ],
         ],
         [
@@ -120,7 +120,7 @@ class DatabaseSeeder extends Seeder
                 'homeinv.view', 'homeinv.conduct',
                 'voting.view', 'voting.cast',
                 'sessions.view',
-                'reports.view',
+                'reports.view', 'reports.export',
             ],
         ],
     ];
