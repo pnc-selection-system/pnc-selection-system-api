@@ -138,7 +138,7 @@ class PermissionSeeder extends Seeder
             'sessions.view',
             'candidates.view', 'candidates.create', 'candidates.edit', 'candidates.import',
             'exam.view',
-            'assessment.view',
+            'assessment.view', 'assessment.manage',
             'homeinv.view',
             'voting.view',
             'reports.view', 'reports.export',
