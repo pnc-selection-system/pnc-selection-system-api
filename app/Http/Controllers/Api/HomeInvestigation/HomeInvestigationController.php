@@ -74,6 +74,7 @@ class HomeInvestigationController extends Controller
                 'home_investigations.status',
                 'candidates.gender',
                 'candidates.phone',
+                'candidates.school_name',
                 DB::raw("COALESCE(home_investigations.current_address, '') AS current_address"),
             ]);
 
@@ -142,6 +143,7 @@ class HomeInvestigationController extends Controller
                 'gender' => $item->gender ?? '',
                 'phoneNumber' => $item->phone ?? '',
                 'currentAddress' => $item->current_address ?? '',
+                'schoolName' => $item->school_name ?? '',
             ];
         });
 
@@ -197,7 +199,7 @@ class HomeInvestigationController extends Controller
             'disability' => null,
             // Education fields
             'educationLevel' => null,
-            'schoolName' => null,
+            'schoolName' => $candidate->school_name ?? null,
             'major' => null,
             'graduationYear' => null,
             'ranking' => null,

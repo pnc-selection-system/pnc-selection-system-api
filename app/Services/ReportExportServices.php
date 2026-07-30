@@ -189,7 +189,7 @@ class ReportExportServices
         for ($i = 2; $i <= $rowCount; $i++) {
             if ($i % 2 === 0) {
                 $sheet->getStyle('A' . $i . ':' . chr(64 + $colCount) . $i)
-                    ->getFill()->setFillType(Fill::FILL_SOLID)->setStartColor(['argb' => 'FFF9FAFB']);
+                    ->getFill()->setFillType(Fill::FILL_SOLID)->setStartColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFF9FAFB'));
             }
         }
     }
@@ -198,20 +198,31 @@ class ReportExportServices
 
     protected function buildFinalSelectedList(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, ?SelectCampaing $campaign): void
     {
-        $headers = ['#', 'Student ID', 'Full Name', 'Gender', 'Province', 'School', 'Status'];
+        $headers = ['#', 'Student ID', 'Full Name', 'Gender', 'School', 'Status'];
+        $colCount = count($headers);
         foreach ($headers as $i => $header) {
             $sheet->setCellValue(chr(65 + $i) . '1', $header);
         }
-        $this->styleHeaderRow($sheet, count($headers));
+        $this->styleHeaderRow($sheet, $colCount);
+
+        if (!$campaign) {
+            $sheet->setCellValue('A2', 'Campaign not found. Please select a valid campaign.');
+            return;
+        }
 
         try {
             $data = DB::table('candidates')
-                ->leftJoin('provinces', 'candidates.province_id', '=', 'provinces.id')
-                ->where('candidates.campaign_id', $campaign?->id)
+                ->where('candidates.campaign_id', $campaign->id)
                 ->where('candidates.status', 'Selected')
-                ->select('candidates.student_id', DB::raw("CONCAT(candidates.first_name, ' ', candidates.last_name) as full_name"), 'candidates.gender', 'provinces.name as province', 'candidates.school_name', 'candidates.status')
+                ->select('candidates.student_id', DB::raw("CONCAT(candidates.first_name, ' ', candidates.last_name) as full_name"), 'candidates.gender', 'candidates.school_name', 'candidates.status')
                 ->orderBy('candidates.first_name')
                 ->get();
+
+            if ($data->isEmpty()) {
+                $sheet->mergeCells('A2:' . chr(64 + $colCount) . '2');
+                $sheet->setCellValue('A2', 'No candidates have been selected for this campaign yet.');
+                return;
+            }
 
             $row = 2;
             foreach ($data as $idx => $c) {
@@ -219,34 +230,47 @@ class ReportExportServices
                 $sheet->setCellValue('B' . $row, $c->student_id ?? '');
                 $sheet->setCellValue('C' . $row, $c->full_name ?? '');
                 $sheet->setCellValue('D' . $row, $c->gender ?? '');
-                $sheet->setCellValue('E' . $row, $c->province ?? '');
-                $sheet->setCellValue('F' . $row, $c->school_name ?? '');
-                $sheet->setCellValue('G' . $row, $c->status ?? 'Selected');
+                $sheet->setCellValue('E' . $row, $c->school_name ?? '');
+                $sheet->setCellValue('F' . $row, $c->status ?? 'Selected');
                 $row++;
             }
-            if ($row > 2) $this->styleDataRows($sheet, $row - 1, count($headers));
+            $this->styleDataRows($sheet, $row - 1, $colCount);
         } catch (\Throwable $e) {
-            $sheet->setCellValue('A2', 'No data available');
+            Log::error('buildFinalSelectedList query failed: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            $sheet->mergeCells('A2:' . chr(64 + $colCount) . '2');
+            $sheet->setCellValue('A2', 'Database error: ' . $e->getMessage());
         }
     }
 
     protected function buildExamResults(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, ?SelectCampaing $campaign): void
     {
         $headers = ['#', 'Student ID', 'Full Name', 'Province', 'Subject', 'Final Score', 'Passed'];
+        $colCount = count($headers);
         foreach ($headers as $i => $header) {
             $sheet->setCellValue(chr(65 + $i) . '1', $header);
         }
-        $this->styleHeaderRow($sheet, count($headers));
+        $this->styleHeaderRow($sheet, $colCount);
+
+        if (!$campaign) {
+            $sheet->setCellValue('A2', 'Campaign not found. Please select a valid campaign.');
+            return;
+        }
 
         try {
             $data = DB::table('exam_results')
                 ->join('candidates', 'exam_results.candidate_id', '=', 'candidates.id')
                 ->join('exam_subjects', 'exam_results.subject_id', '=', 'exam_subjects.id')
                 ->leftJoin('provinces', 'candidates.province_id', '=', 'provinces.id')
-                ->where('candidates.campaign_id', $campaign?->id)
+                ->where('candidates.campaign_id', $campaign->id)
                 ->select('candidates.student_id', DB::raw("CONCAT(candidates.first_name, ' ', candidates.last_name) as full_name"), 'provinces.name as province', 'exam_subjects.name as subject', 'exam_results.final_score', 'exam_results.passed')
                 ->orderBy('candidates.first_name')
                 ->get();
+
+            if ($data->isEmpty()) {
+                $sheet->mergeCells('A2:' . chr(64 + $colCount) . '2');
+                $sheet->setCellValue('A2', 'No data available for this campaign.');
+                return;
+            }
 
             $row = 2;
             foreach ($data as $idx => $r) {
@@ -259,8 +283,9 @@ class ReportExportServices
                 $sheet->setCellValue('G' . $row, $r->passed ? 'Yes' : 'No');
                 $row++;
             }
-            if ($row > 2) $this->styleDataRows($sheet, $row - 1, count($headers));
+            $this->styleDataRows($sheet, $row - 1, $colCount);
         } catch (\Throwable $e) {
+            $sheet->mergeCells('A2:' . chr(64 + $colCount) . '2');
             $sheet->setCellValue('A2', 'No data available');
         }
     }
@@ -268,19 +293,31 @@ class ReportExportServices
     protected function buildInvestigationSummary(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, ?SelectCampaing $campaign): void
     {
         $headers = ['#', 'Student ID', 'Full Name', 'Province', 'Investigator', 'Status', 'Recommendation', 'Completed Date'];
+        $colCount = count($headers);
         foreach ($headers as $i => $header) {
             $sheet->setCellValue(chr(65 + $i) . '1', $header);
         }
-        $this->styleHeaderRow($sheet, count($headers));
+        $this->styleHeaderRow($sheet, $colCount);
+
+        if (!$campaign) {
+            $sheet->setCellValue('A2', 'Campaign not found. Please select a valid campaign.');
+            return;
+        }
 
         try {
             $data = DB::table('home_investigations')
                 ->join('candidates', 'home_investigations.candidate_id', '=', 'candidates.id')
                 ->leftJoin('provinces', 'candidates.province_id', '=', 'provinces.id')
                 ->leftJoin('users', 'home_investigations.investigator_id', '=', 'users.id')
-                ->where('candidates.campaign_id', $campaign?->id)
+                ->where('candidates.campaign_id', $campaign->id)
                 ->select('candidates.student_id', DB::raw("CONCAT(candidates.first_name, ' ', candidates.last_name) as full_name"), 'provinces.name as province', 'users.name as investigator', 'home_investigations.status', 'home_investigations.recommendation', 'home_investigations.completed_at')
                 ->get();
+
+            if ($data->isEmpty()) {
+                $sheet->mergeCells('A2:' . chr(64 + $colCount) . '2');
+                $sheet->setCellValue('A2', 'No data available for this campaign.');
+                return;
+            }
 
             $row = 2;
             foreach ($data as $idx => $inv) {
@@ -294,8 +331,9 @@ class ReportExportServices
                 $sheet->setCellValue('H' . $row, isset($inv->completed_at) ? date('Y-m-d', strtotime($inv->completed_at)) : '');
                 $row++;
             }
-            if ($row > 2) $this->styleDataRows($sheet, $row - 1, count($headers));
+            $this->styleDataRows($sheet, $row - 1, $colCount);
         } catch (\Throwable $e) {
+            $sheet->mergeCells('A2:' . chr(64 + $colCount) . '2');
             $sheet->setCellValue('A2', 'No data available');
         }
     }
@@ -303,20 +341,32 @@ class ReportExportServices
     protected function buildVotingRecord(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet, ?SelectCampaing $campaign): void
     {
         $headers = ['#', 'Student ID', 'Full Name', 'Province', 'Round', 'Votes For', 'Votes Against', 'Status'];
+        $colCount = count($headers);
         foreach ($headers as $i => $header) {
             $sheet->setCellValue(chr(65 + $i) . '1', $header);
         }
-        $this->styleHeaderRow($sheet, count($headers));
+        $this->styleHeaderRow($sheet, $colCount);
+
+        if (!$campaign) {
+            $sheet->setCellValue('A2', 'Campaign not found. Please select a valid campaign.');
+            return;
+        }
 
         try {
             $data = DB::table('voting_round_candidates')
                 ->join('candidates', 'voting_round_candidates.candidate_id', '=', 'candidates.id')
                 ->join('voting_rounds', 'voting_round_candidates.voting_round_id', '=', 'voting_rounds.id')
                 ->leftJoin('provinces', 'candidates.province_id', '=', 'provinces.id')
-                ->where('candidates.campaign_id', $campaign?->id)
+                ->where('candidates.campaign_id', $campaign->id)
                 ->select('candidates.student_id', DB::raw("CONCAT(candidates.first_name, ' ', candidates.last_name) as full_name"), 'provinces.name as province', 'voting_rounds.name as round', 'voting_round_candidates.votes_for', 'voting_round_candidates.votes_against', 'voting_round_candidates.status')
                 ->orderBy('voting_rounds.name')
                 ->get();
+
+            if ($data->isEmpty()) {
+                $sheet->mergeCells('A2:' . chr(64 + $colCount) . '2');
+                $sheet->setCellValue('A2', 'No data available for this campaign.');
+                return;
+            }
 
             $row = 2;
             foreach ($data as $idx => $rec) {
@@ -330,8 +380,9 @@ class ReportExportServices
                 $sheet->setCellValue('H' . $row, $rec->status ?? '');
                 $row++;
             }
-            if ($row > 2) $this->styleDataRows($sheet, $row - 1, count($headers));
+            $this->styleDataRows($sheet, $row - 1, $colCount);
         } catch (\Throwable $e) {
+            $sheet->mergeCells('A2:' . chr(64 + $colCount) . '2');
             $sheet->setCellValue('A2', 'No data available');
         }
     }

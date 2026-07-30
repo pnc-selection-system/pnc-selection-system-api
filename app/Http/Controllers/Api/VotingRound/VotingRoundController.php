@@ -570,6 +570,7 @@ class VotingRoundController extends Controller
             'province' => $candidate->province?->name,
             'ngo' => $candidate->referringNgo?->name,
             'school_name' => $candidate->school_name,
+            'photo_url' => $candidate->photo_url ? url($candidate->photo_url) : null,
             'exam_score' => $examScore ? round((float) $examScore, 2) : null,
             'exam_rank' => $examRank ? (int) $examRank : null,
             'assessment_percent' => $assessment ? (float) $assessment->total_score : null,
